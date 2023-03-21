@@ -8,10 +8,9 @@ use crate::{Bookmark, Tag};
 const FILE_PATH: &str = "./my_db.db3";
 
 pub fn init() -> Result<()> {
-    match File::create_new(FILE_PATH) {
-        Ok(_) => println!("Created new database file"),
-        _ => {}
-    };
+    if File::create_new(FILE_PATH).is_ok() {
+        println!("Created new database file")
+    }
     let conn = Connection::open(FILE_PATH)?;
 
     conn.execute(
@@ -27,7 +26,8 @@ pub fn init() -> Result<()> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS tags (
             tag_name       TEXT NOT NULL,
-            bookmark_id    INTEGER PRIMARY KEY
+            bookmark_id    INTEGER NOT NULL,
+            UNIQUE (tag_name, bookmark_id) ON CONFLICT IGNORE
         )",
         (),
     )?;
@@ -48,14 +48,15 @@ pub fn insert(inp: Vec<Bookmark>) -> Result<()> {
     Ok(())
 }
 
-pub fn tags_for_bookmark(id: i32) -> Result<Vec<Tag>> {
+pub fn tags_for_bookmark(id: u64) -> Result<Vec<Tag>> {
     let conn = Connection::open(FILE_PATH)?;
 
     let mut stmt = conn.prepare("SELECT DISTINCT tag_name FROM tags WHERE bookmark_id = :id")?;
     let res = stmt
-        .query_map([":id", id.to_string().as_str()], |row| {
+        .query_map(&[(":id", &id.to_string())], |row| {
             Ok(Tag {
                 tag_name: row.get(0)?,
+                bookmarks_count: 0,
             })
         })?
         .collect();
@@ -66,11 +67,13 @@ pub fn tags_for_bookmark(id: i32) -> Result<Vec<Tag>> {
 pub fn list_tags() -> Result<Vec<Tag>> {
     let conn = Connection::open(FILE_PATH)?;
 
-    let mut stmt = conn.prepare("SELECT tag_name FROM tags")?;
+    let mut stmt =
+        conn.prepare("SELECT tag_name, COUNT(bookmark_id) FROM tags GROUP BY tag_name")?;
     let res = stmt
         .query_map([], |row| {
             Ok(Tag {
                 tag_name: row.get(0)?,
+                bookmarks_count: row.get(1)?,
             })
         })?
         .collect();
@@ -91,11 +94,32 @@ pub fn list_all() -> Result<Vec<Bookmark>> {
                 name: row.get(1)?,
                 url: row.get(2)?,
                 creation_time: row.get(3)?,
+                tags: tags_for_bookmark(row.get(0)?)?,
             })
         })?
         .collect();
 
     res
+}
+
+pub fn get_bookmark_by_id(id: u64) -> Result<Bookmark> {
+    let conn = Connection::open(FILE_PATH)?;
+
+    let mut stmt =
+        conn.prepare("SELECT id, name, url, creation_time FROM bookmarks WHERE id = :id")?;
+    let res: Result<Vec<Bookmark>> = stmt
+        .query_map(&[(":id", &id.to_string())], |row| {
+            Ok(Bookmark {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                url: row.get(2)?,
+                creation_time: row.get(3)?,
+                tags: tags_for_bookmark(id)?,
+            })
+        })?
+        .collect();
+
+    res.map(|x| x[0].clone())
 }
 
 pub fn insert_from_lines(input: String) -> Result<()> {
@@ -111,6 +135,7 @@ pub fn insert_from_lines(input: String) -> Result<()> {
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards")
                     .as_secs(),
+                tags: Vec::new(),
             })
             .collect(),
     )

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block head %} Bookmark {{ bookmark.id }} {% endblock head %}
+{% block main %}
+<div>
+    <label for="link-url">URL</label>
+    <input type="text" id="link-url" name="url" required value="{{bookmark.url}}" autocomplete="off">
+</div>
+<div>
+    <label for="link-title">Title</label>
+    <input type="text" id="link-title" name="title" required value="{{bookmark.name}}" autocomplete="off">
+</div>
+<div>
+    <label for="link-tags">Tags space-separated</label>
+    <input type="text" id="link-tags" name="tags"
+        value="{{bookmark.tags | map(attribute="tag_name") | join(sep=" ") }}" placeholder="video, programming" autocomplete="off">
+    <p class="input-caption">Some special characters are ignored.</p>
+</div>
+{% endblock main %}

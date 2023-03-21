@@ -11,7 +11,7 @@ use actix_multipart::Multipart;
 use actix_web::{
     error::ErrorInternalServerError,
     get, post,
-    web::{Form, Redirect},
+    web::{Form, Path, Redirect},
     App, HttpResponse, HttpServer, Responder, Result,
 };
 use futures_util::StreamExt as _;
@@ -20,20 +20,20 @@ use serde::{Deserialize, Serialize};
 mod database;
 mod templates;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Bookmark {
     id: u64,
     name: String,
     url: String,
     creation_time: u64, // maybe use string with ISO 8601
-                        // tags: Vec<String>,
-                        // comments: String, use for youtube timestamp
-                        // content wget or Path to html file or Option<Vec<u8>>,
+    tags: Vec<Tag>,
+    // comments: String, use for youtube timestamp
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Tag {
     tag_name: String,
+    bookmarks_count: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -63,12 +63,18 @@ async fn add_file_form(mut payload: Multipart) -> Result<impl Responder> {
     Ok(Redirect::to("/").see_other())
 }
 
-#[get("edit-link/{id}")]
-async fn edit_link() -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok().body(""))
+#[get("edit-link/{id}/")]
+async fn edit_page(path: Path<u64>) -> Result<HttpResponse> {
+    let id = path.into_inner();
+
+    templates::edit_page(database::get_bookmark_by_id(id).map_err(ErrorInternalServerError)?)
+        .map_or_else(
+            |err| Err(ErrorInternalServerError(err)),
+            |body| Ok(HttpResponse::Ok().body(body)),
+        )
 }
 
-#[get("cat/")]
+#[get("tags/")]
 async fn tags_page() -> Result<HttpResponse> {
     templates::tags_page(database::list_tags().map_err(ErrorInternalServerError)?).map_or_else(
         |err| Err(ErrorInternalServerError(err)),
@@ -92,7 +98,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(home_page)
             .service(tags_page)
-            .service(edit_link)
+            .service(edit_page)
             .service(add_file_form)
             .service(add_urls_form)
     })

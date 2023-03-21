@@ -22,7 +22,7 @@ lazy_static! {
 
 fn do_nothing_filter(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     let s = try_get_value!("do_nothing_filter", "value", String, value);
-    Ok(to_value(&s).unwrap())
+    Ok(to_value(s).unwrap())
 }
 
 pub fn index_page(bms: Vec<Bookmark>) -> Result<String> {
@@ -35,4 +35,10 @@ pub fn tags_page(tags: Vec<Tag>) -> Result<String> {
     let mut ctx = Context::new();
     ctx.insert("tags", &tags);
     TEMPLATES.render("tags.html.tera", &ctx)
+}
+
+pub fn edit_page(bookmark: Bookmark) -> Result<String> {
+    let mut ctx = Context::new();
+    ctx.insert("bookmark", &bookmark);
+    TEMPLATES.render("edit.html.tera", &ctx)
 }

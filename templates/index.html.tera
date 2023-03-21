@@ -1,58 +1,42 @@
-<!doctype html>
-<html>
-    <head>
-        <title>All bookmarks</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-            {% include "style.css" %}
-        </style>
-    </head>
-    <body>
-        <header>
-            <nav>
-                <h1>Bookmarks {{ bookmarks|length }}</h1>
-                <ul>
-                    <li> <a href="/">All</a> </li>
-                    <li> <a href="/cat/">Categories</a> </li>
-                    <li> <a href="/about/">About</a> </li>
-                </ul>
-            </nav>
-        </header>
-        <main>
-            {% for bookmark in bookmarks %}
-            <article class="h-entry">
-                <a class="edit-post-btn" href="/edit-link/{{bookmark.id}}">Edit</a>
-                <h3 class="p-name"><a class="u-url" href="{{ bookmark.url }}">{{ bookmark.name }} </a></h3>
-                <div class="about-post">
-                    <time> {{ bookmark.creation_time|date(format="%Y-%m-%d %H:%M") }} </time>
-                </div>
-            </article>
-            {% endfor %}
-        </main>
-        <div>
-            <div>
-                <form method="post" enctype="multipart/form-data">
-                    <div>
-                        <label for="file">Choose file to upload</label>
-                        <input type="file" id="file" name="file" multiple />
-                    </div>
-                    <div>
-                        <button class="btn" type="submit">Submit</button>
-                    </div>
-                </form>
-            </div>
-            <div>
-                <form action="/add-urls" method="post">
-                    <div>
-                        <label for="urls">Add urls</label>
-                        <textarea name="urls" cols="40" rows="5"></textarea>
-                    </div>
-                    <div>
-                        <button class="btn" type="submit">Submit</button>
-                    </div>
-                </form>
-            </div>
+{% extends "base.html" %}
+{% block head %} Bookmarks {{ bookmarks|length }} {% endblock head %}
+{% block main %}
+    {% for bookmark in bookmarks %}
+    <article class="h-entry">
+        <a class="edit-post-btn" href="/edit-link/{{ bookmark.id }}/">Edit</a>
+        <h3 class="p-name"><a class="u-url" href="{{ bookmark.url }}">{{ bookmark.name }} </a></h3>
+        <div class="about-post">
+            <div>{{bookmark.tags | map(attribute="tag_name") | join(sep=" ") }}</div>
+            <time>
+                <a href="/history/{{bookmark.creation_time|date(format="%Y-%m-%d")}}/">
+                    {{ bookmark.creation_time|date(format="%Y-%m-%d %H:%M") }}
+                </a>
+            </time>
         </div>
-    </body>
-</html>
+    </article>
+    {% endfor %}
+{% endblock main %}
+<div>
+    <div>
+        <form method="post" enctype="multipart/form-data">
+            <div>
+                <label for="file">Choose file to upload</label>
+                <input type="file" id="file" name="file" multiple />
+            </div>
+            <div>
+                <button class="btn" type="submit">Submit</button>
+            </div>
+        </form>
+    </div>
+    <div>
+        <form action="/add-urls" method="post">
+            <div>
+                <label for="urls">Add urls</label>
+                <textarea name="urls" cols="40" rows="5"></textarea>
+            </div>
+            <div>
+                <button class="btn" type="submit">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
