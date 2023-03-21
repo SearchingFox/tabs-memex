@@ -1,0 +1,170 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+body {
+    font-family: sans-serif;
+    word-break: break-word;
+
+    display: grid;
+    grid-template-columns: 1fr 4fr 1fr;
+    grid-template-areas: "header main footer";
+}
+header {
+    grid-area: header;
+}
+main {
+    grid-area: main;
+}
+footer {
+    grid-area: footer;
+}
+
+/* Design */
+header {
+    padding: 0 4px;
+}
+header ul {
+    padding: 0;
+    margin: 8px 0;
+}
+header li {
+    list-style-type: none;
+}
+main > article:first-of-type {
+    margin-top: 0;
+}
+a.edit-post-btn {
+    float: right;
+    font-size: small;
+    margin: 2px;
+}
+.about-post {
+    display: flex;
+    font-size: small;
+}
+.about-post time {
+    margin-left: auto;
+}
+.u-bookmark-of {
+    display: inline-block;
+    font-size: small;
+    text-decoration: none;
+}
+h3 {
+    margin-bottom: 4px;
+}
+dt {
+    font-weight: bold;
+}
+dd + dt {
+    margin-top: 8px;
+}
+.mv-categories ol {
+    padding-left: 1rem;
+}
+.mv-categories li {
+    line-height: 150%;
+}
+.categories {
+    display: flex;
+    padding: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 4px 0;
+}
+.categories li {
+    list-style-type: none;
+}
+.categories li + li {
+    margin-left: 8px;
+}
+.categories a {
+    display: block;
+    padding: 4px 8px;
+    text-decoration: none;
+}
+form {
+    max-width: 30rem;
+    margin-bottom: 20px;
+}
+form > div + div {
+    margin-top: 16px;
+}
+form label {
+    display: block;
+    margin-bottom: 8px;
+}
+form input[type="submit"] {
+    min-width: 50%;
+    max-width: 15rem;
+    margin-top: 8px;
+}
+form textarea {
+    height: 100px;
+    padding: 1px;
+}
+.input-caption {
+    font-size: small;
+    margin: 4px 0;
+}
+h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-family: Iosevka, sans-serif;
+}
+.h-entry h3 {
+    margin: 0;
+    font-size: medium;
+}
+article p:last-of-type:not(.h-entry p) {
+    margin-bottom: 0;
+}
+h2 + *:not(p, .u-bookmark-of),
+h3 + *:not(p, .u-bookmark-of) {
+    margin-top: 8px;
+}
+article + article {
+    margin-top: 1px;
+}
+.about-post a, .about-post .empty-set {
+    margin-left: .25rem;
+}
+
+.btn {
+  border-radius: 0;
+  padding: .1rem .75rem;
+  font-size: .9rem;
+  transition: background .1s linear;
+
+  background: #0062cc;
+  border: #001933 1px solid;
+  color: #fff;
+
+  display: block;
+  width: 100%;
+}
+
+/* Colors */
+html {
+    background: #eee;
+    padding: 0;
+}
+main > article {
+    background: white;
+    border-radius: 5px;
+    padding: 5px;
+    margin: 10px;
+}
+.edit-post-btn, .edit-post-btn:visited {
+    color: black;
+}
+header a, header a:hover, header a:visited {
+    color: black;
+}
+.about-post a {
+    color: black;
+}
