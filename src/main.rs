@@ -43,8 +43,8 @@ pub struct AddUrlsForm {
 }
 
 #[post("/add-urls")]
-async fn add_urls_form(Form(params): Form<AddUrlsForm>) -> Result<impl Responder> {
-    database::insert_from_lines(params.urls).map_err(ErrorInternalServerError)?;
+async fn add_urls_form(Form(form): Form<AddUrlsForm>) -> Result<impl Responder> {
+    database::insert_from_lines(form.urls).map_err(ErrorInternalServerError)?;
     Ok(Redirect::to("/").see_other())
 }
 
@@ -76,36 +76,60 @@ async fn update_bookmark_form(
     path: Path<u64>,
     form: Form<EditBookmarkForm>,
 ) -> Result<impl Responder> {
-    database::update_bookmark(
-        path.into_inner(),
-        form.url.clone(),
-        form.name.clone(),
-        form.tags
+    database::update_bookmark(Bookmark {
+        id: path.into_inner(),
+        name: form.name.clone(),
+        url: form.url.clone(),
+        creation_time: 0,
+        tags: form
+            .tags
             .split(' ')
             .map(|tag_name| Tag {
                 tag_name: tag_name.to_string(),
                 bookmarks_count: 0,
             })
             .collect::<Vec<_>>(),
-    )
+    })
     .map_err(ErrorInternalServerError)?;
     Ok(Redirect::to("/").see_other())
 }
 
 #[get("edit-link/{id}/")]
 async fn edit_page(path: Path<u64>) -> Result<HttpResponse> {
-    let id = path.into_inner();
-
-    templates::edit_page(database::get_bookmark_by_id(id).map_err(ErrorInternalServerError)?)
-        .map_or_else(
-            |err| Err(ErrorInternalServerError(err)),
-            |body| Ok(HttpResponse::Ok().body(body)),
-        )
+    templates::edit_page(
+        database::get_bookmark_by_id(path.into_inner()).map_err(ErrorInternalServerError)?,
+    )
+    .map_or_else(
+        |err| Err(ErrorInternalServerError(err)),
+        |body| Ok(HttpResponse::Ok().body(body)),
+    )
 }
 
 #[get("tags/")]
 async fn tags_page() -> Result<HttpResponse> {
     templates::tags_page(database::list_tags().map_err(ErrorInternalServerError)?).map_or_else(
+        |err| Err(ErrorInternalServerError(err)),
+        |body| Ok(HttpResponse::Ok().body(body)),
+    )
+}
+
+#[get("tags/{name}/")]
+async fn tag_page(name: Path<String>) -> Result<HttpResponse> {
+    templates::index_page(
+        database::get_bookmarks_by_tag(name.into_inner()).map_err(ErrorInternalServerError)?,
+    )
+    .map_or_else(
+        |err| Err(ErrorInternalServerError(err)),
+        |body| Ok(HttpResponse::Ok().body(body)),
+    )
+}
+
+#[get("date/{date}/")]
+async fn date_page(date: Path<String>) -> Result<HttpResponse> {
+    templates::index_page(
+        database::get_bookmarks_by_date(date.into_inner()).map_err(ErrorInternalServerError)?,
+    )
+    .map_or_else(
         |err| Err(ErrorInternalServerError(err)),
         |body| Ok(HttpResponse::Ok().body(body)),
     )
@@ -127,6 +151,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             // .wrap(middleware::NormalizePath::trim())
             .app_data(web::FormConfig::default().limit(4096))
+            .service(tag_page)
+            .service(date_page)
             .service(home_page)
             .service(tags_page)
             .service(edit_page)

@@ -48,28 +48,23 @@ pub fn insert(inp: Vec<Bookmark>) -> Result<()> {
     Ok(())
 }
 
-pub fn update_bookmark(
-    id: u64,
-    new_url: String,
-    new_name: String,
-    new_tags: Vec<Tag>,
-) -> Result<()> {
+pub fn update_bookmark(b: Bookmark) -> Result<()> {
     // conn: &Connection
     let conn = Connection::open(FILE_PATH)?;
 
     conn.execute(
         "UPDATE bookmarks SET name = :new_name, url = :new_url WHERE id = :id",
         &[
-            (":id", &id.to_string()),
-            (":new_name", &new_name),
-            (":new_url", &new_url),
+            (":id", &b.id.to_string()),
+            (":new_name", &b.name),
+            (":new_url", &b.url),
         ],
     )?;
 
-    for nt in new_tags {
+    for nt in b.tags {
         conn.execute(
             "INSERT INTO tags VALUES (?1, ?2)",
-            (&nt.tag_name, &id.to_string()),
+            (&nt.tag_name, &b.id.to_string()),
         )?;
     }
 
@@ -148,6 +143,48 @@ pub fn get_bookmark_by_id(id: u64) -> Result<Bookmark> {
         .collect();
 
     res.map(|x| x[0].clone())
+}
+
+pub fn get_bookmarks_by_tag(tag_name: String) -> Result<Vec<Bookmark>> {
+    let conn = Connection::open(FILE_PATH)?;
+
+    let mut stmt = conn.prepare(
+        "SELECT id, name, url, creation_time FROM bookmarks JOIN tags ON id = bookmark_id WHERE tag_name = :tag_name",
+    )?;
+    let res = stmt
+        .query_map(&[(":tag_name", &tag_name)], |row| {
+            Ok(Bookmark {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                url: row.get(2)?,
+                creation_time: row.get(3)?,
+                tags: tags_for_bookmark(row.get(0)?)?,
+            })
+        })?
+        .collect();
+
+    res
+}
+
+pub fn get_bookmarks_by_date(date: String) -> Result<Vec<Bookmark>> {
+    let conn = Connection::open(FILE_PATH)?;
+
+    let mut stmt = conn.prepare(
+        "SELECT id, name, url, creation_time FROM bookmarks WHERE DATE(creation_time, 'unixepoch', 'utc') = :date",
+    )?;
+    let res = stmt
+        .query_map(&[(":date", &date)], |row| {
+            Ok(Bookmark {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                url: row.get(2)?,
+                creation_time: row.get(3)?,
+                tags: tags_for_bookmark(row.get(0)?)?,
+            })
+        })?
+        .collect();
+
+    res
 }
 
 pub fn insert_from_lines(input: String) -> Result<()> {

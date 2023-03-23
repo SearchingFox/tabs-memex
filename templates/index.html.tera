@@ -8,8 +8,8 @@
         <div class="about-post">
             <div>{{ bookmark.tags | map(attribute="tag_name") | join(sep=" ") }}</div>
             <time>
-                <a href="/history/{{bookmark.creation_time|date(format="%Y-%m-%d")}}/">
-                    {{ bookmark.creation_time|date(format="%Y-%m-%d %H:%M") }}
+                <a href="/date/{{ bookmark.creation_time | date(format="%Y-%m-%d") }}/">
+                    {{ bookmark.creation_time | date(format="%Y-%m-%d %H:%M") }}
                 </a>
             </time>
         </div>

@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% block head %} Tags {{ tags|length }} {% endblock head %}
 {% block main %}
+<div>
     {% for tag in tags %}
-    <div><a href="/tags/{{tag.tag_name}}/">{{tag.tag_name}}</a> {{tag.bookmarks_count}}</div>
+    <div>
+        <a href="/tags/{{ tag.tag_name }}/">{{ tag.tag_name }}</a> {{ tag.bookmarks_count }}
+    </div>
     {% endfor %}
+</div>
 {% endblock main %}
