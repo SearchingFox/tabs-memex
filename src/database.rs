@@ -48,6 +48,34 @@ pub fn insert(inp: Vec<Bookmark>) -> Result<()> {
     Ok(())
 }
 
+pub fn update_bookmark(
+    id: u64,
+    new_url: String,
+    new_name: String,
+    new_tags: Vec<Tag>,
+) -> Result<()> {
+    // conn: &Connection
+    let conn = Connection::open(FILE_PATH)?;
+
+    conn.execute(
+        "UPDATE bookmarks SET name = :new_name, url = :new_url WHERE id = :id",
+        &[
+            (":id", &id.to_string()),
+            (":new_name", &new_name),
+            (":new_url", &new_url),
+        ],
+    )?;
+
+    for nt in new_tags {
+        conn.execute(
+            "INSERT INTO tags VALUES (?1, ?2)",
+            (&nt.tag_name, &id.to_string()),
+        )?;
+    }
+
+    Ok(())
+}
+
 pub fn tags_for_bookmark(id: u64) -> Result<Vec<Tag>> {
     let conn = Connection::open(FILE_PATH)?;
 

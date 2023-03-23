@@ -6,7 +6,7 @@
         <a class="edit-post-btn" href="/edit-link/{{ bookmark.id }}/">Edit</a>
         <h3 class="p-name"><a class="u-url" href="{{ bookmark.url }}">{{ bookmark.name }} </a></h3>
         <div class="about-post">
-            <div>{{bookmark.tags | map(attribute="tag_name") | join(sep=" ") }}</div>
+            <div>{{ bookmark.tags | map(attribute="tag_name") | join(sep=" ") }}</div>
             <time>
                 <a href="/history/{{bookmark.creation_time|date(format="%Y-%m-%d")}}/">
                     {{ bookmark.creation_time|date(format="%Y-%m-%d %H:%M") }}
@@ -16,7 +16,7 @@
     </article>
     {% endfor %}
 {% endblock main %}
-<div>
+{% block add %}
     <div>
         <form method="post" enctype="multipart/form-data">
             <div>
@@ -35,8 +35,8 @@
                 <textarea name="urls" cols="40" rows="5"></textarea>
             </div>
             <div>
-                <button class="btn" type="submit">Submit</button>
+                <button class="btn" type="submit">Save</button>
             </div>
         </form>
     </div>
-</div>
+{% endblock add %}

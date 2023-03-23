@@ -10,8 +10,8 @@ extern crate serde_json;
 use actix_multipart::Multipart;
 use actix_web::{
     error::ErrorInternalServerError,
-    get, post,
-    web::{Form, Path, Redirect},
+    get, middleware, post,
+    web::{self, Form, Path, Redirect},
     App, HttpResponse, HttpServer, Responder, Result,
 };
 use futures_util::StreamExt as _;
@@ -27,7 +27,8 @@ pub struct Bookmark {
     url: String,
     creation_time: u64, // maybe use string with ISO 8601
     tags: Vec<Tag>,
-    // comments: String, use for youtube timestamp
+    // ? update_time
+    // ? description: String, use for youtube timestamp
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -42,8 +43,8 @@ pub struct AddUrlsForm {
 }
 
 #[post("/add-urls")]
-async fn add_urls_form(params: Form<AddUrlsForm>) -> Result<impl Responder> {
-    database::insert_from_lines(params.urls.clone()).map_err(ErrorInternalServerError)?;
+async fn add_urls_form(Form(params): Form<AddUrlsForm>) -> Result<impl Responder> {
+    database::insert_from_lines(params.urls).map_err(ErrorInternalServerError)?;
     Ok(Redirect::to("/").see_other())
 }
 
@@ -60,6 +61,34 @@ async fn add_file_form(mut payload: Multipart) -> Result<impl Responder> {
         database::insert_from_lines(res).map_err(ErrorInternalServerError)?;
     }
 
+    Ok(Redirect::to("/").see_other())
+}
+
+#[derive(Deserialize)]
+struct EditBookmarkForm {
+    url: String,
+    name: String,
+    tags: String,
+}
+
+#[post("/update-bookmark/{id}")]
+async fn update_bookmark_form(
+    path: Path<u64>,
+    form: Form<EditBookmarkForm>,
+) -> Result<impl Responder> {
+    database::update_bookmark(
+        path.into_inner(),
+        form.url.clone(),
+        form.name.clone(),
+        form.tags
+            .split(' ')
+            .map(|tag_name| Tag {
+                tag_name: tag_name.to_string(),
+                bookmarks_count: 0,
+            })
+            .collect::<Vec<_>>(),
+    )
+    .map_err(ErrorInternalServerError)?;
     Ok(Redirect::to("/").see_other())
 }
 
@@ -93,16 +122,19 @@ async fn home_page() -> Result<HttpResponse> {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     database::init().expect("Database initialization failed");
-    println!("Server started at http://localhost:1738");
+    println!("Server started at http://localhost:1739");
     HttpServer::new(|| {
         App::new()
+            // .wrap(middleware::NormalizePath::trim())
+            .app_data(web::FormConfig::default().limit(4096))
             .service(home_page)
             .service(tags_page)
             .service(edit_page)
             .service(add_file_form)
             .service(add_urls_form)
+            .service(update_bookmark_form)
     })
-    .bind(("127.0.0.1", 1738))?
+    .bind(("127.0.0.1", 1739))?
     .run()
     .await
 }
