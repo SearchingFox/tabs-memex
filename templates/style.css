@@ -1,6 +1,16 @@
 *, *::before, *::after {
     box-sizing: border-box;
 }
+:root {
+    --light-bg-color: #eee;
+    --light-article-bg-color: white;
+    --dark-bg-color: #111111;
+    --dark-article-bg-color: #6f6e6e;
+}
+html {
+    background: var(--light-bg-color);
+    padding: 0;
+}
 body {
     font-family: sans-serif;
     word-break: break-word;
@@ -19,7 +29,6 @@ footer {
     grid-area: footer;
 }
 
-/* Design */
 header {
     padding: 0 4px;
 }
@@ -33,16 +42,41 @@ header li {
 main > article:first-of-type {
     margin-top: 0;
 }
-a.edit-post-btn {
-    float: right;
-    font-size: small;
-    margin: 2px;
+main > article {
+    background: var(--light-article-bg-color);
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px;
 }
-.about-post {
+article + article {
+    margin-top: 1px;
+}
+article p:last-of-type:not(.h-entry p) {
+    margin-bottom: 0;
+}
+
+.edit-bookmark-buttons {
+    float: right;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+a.edit-bookmark-btn {
+    font-size: small;
+    margin-right: 2px;
+}
+a.edit-bookmark-btn:link, a.delete-bookmark-btn:link {
+    text-decoration: none;
+}
+a.delete-bookmark-btn > button {
+    background: red;
+}
+
+.about-bookmark {
     display: flex;
     font-size: small;
+    font-style: italic;
 }
-.about-post time {
+.about-bookmark time {
     margin-left: auto;
 }
 .u-bookmark-of {
@@ -85,7 +119,7 @@ dd + dt {
 }
 form {
     max-width: 30rem;
-    margin-bottom: 20px;
+    margin: 5px auto;
 }
 form > div + div {
     margin-top: 16px;
@@ -93,6 +127,9 @@ form > div + div {
 form label {
     display: block;
     margin-bottom: 8px;
+}
+div input {
+    width: 100%;
 }
 form input[type="submit"] {
     min-width: 50%;
@@ -120,17 +157,12 @@ h3 {
     margin: 0;
     font-size: medium;
 }
-article p:last-of-type:not(.h-entry p) {
-    margin-bottom: 0;
-}
 h2 + *:not(p, .u-bookmark-of),
 h3 + *:not(p, .u-bookmark-of) {
     margin-top: 8px;
 }
-article + article {
-    margin-top: 1px;
-}
-.about-post a, .about-post .empty-set {
+
+.about-bookmark a, .about-bookmark .empty-set {
     margin-left: .25rem;
 }
 
@@ -142,29 +174,18 @@ article + article {
 
   background: #0062cc;
   border: #001933 1px solid;
-  color: #fff;
+  color: white;
 
   display: block;
   width: 100%;
 }
 
-/* Colors */
-html {
-    background: #eee;
-    padding: 0;
-}
-main > article {
-    background: white;
-    border-radius: 5px;
-    padding: 5px;
-    margin: 10px;
-}
-.edit-post-btn, .edit-post-btn:visited {
+.edit-bookmark-btn, .edit-bookmark-btn:visited {
     color: black;
 }
 header a, header a:hover, header a:visited {
     color: black;
 }
-.about-post a {
+.about-bookmark a {
     color: black;
 }

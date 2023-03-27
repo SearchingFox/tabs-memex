@@ -1,12 +1,16 @@
 {% extends "base.html" %}
-{% block head %} Bookmarks {{ bookmarks|length }} {% endblock head %}
+{% block head %} Bookmarks {{ bookmarks | length }} {% endblock head %}
 {% block main %}
     {% for bookmark in bookmarks %}
     <article class="h-entry">
-        <a class="edit-post-btn" href="/edit-link/{{ bookmark.id }}/">Edit</a>
-        <h3 class="p-name"><a class="u-url" href="{{ bookmark.url }}">{{ bookmark.name }} </a></h3>
-        <div class="about-post">
-            <div>{{ bookmark.tags | map(attribute="tag_name") | join(sep=" ") }}</div>
+        <div class="edit-bookmark-buttons">
+            <a class="edit-bookmark-btn" href="/edit-bookmark/{{ bookmark.id }}/"><button class="btn">Edit</button></a>
+            <a class="delete-bookmark-btn" href="/delete-bookmark/{{ bookmark.id }}/"><button class="btn">Delete</button></a>
+        </div>
+        <h3 class="p-name"><a class="u-url" href="{{ bookmark.url }}">{{ bookmark.name }}</a></h3>
+
+        <div class="about-bookmark">
+            <div>{{ bookmark.tags | join(sep=" ") }}</div>
             <time>
                 <a href="/date/{{ bookmark.creation_time | date(format="%Y-%m-%d") }}/">
                     {{ bookmark.creation_time | date(format="%Y-%m-%d %H:%M") }}

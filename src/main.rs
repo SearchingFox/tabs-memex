@@ -17,16 +17,18 @@ use actix_web::{
 use futures_util::StreamExt as _;
 use serde::{Deserialize, Serialize};
 
+use std::collections::BTreeSet;
+
 mod database;
 mod templates;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Bookmark {
     id: u64,
     name: String,
     url: String,
     creation_time: u64, // maybe use string with ISO 8601
-    tags: Vec<Tag>,
+    tags: BTreeSet<String>,
     // ? update_time
     // ? description: String, use for youtube timestamp
 }
@@ -38,7 +40,7 @@ pub struct Tag {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AddUrlsForm {
+struct AddUrlsForm {
     urls: String,
 }
 
@@ -73,36 +75,39 @@ struct EditBookmarkForm {
 
 #[post("/update-bookmark/{id}")]
 async fn update_bookmark_form(
-    path: Path<u64>,
+    id: Path<u64>,
     form: Form<EditBookmarkForm>,
 ) -> Result<impl Responder> {
     database::update_bookmark(Bookmark {
-        id: path.into_inner(),
+        id: id.into_inner(),
         name: form.name.clone(),
         url: form.url.clone(),
         creation_time: 0,
         tags: form
             .tags
             .split(' ')
-            .map(|tag_name| Tag {
-                tag_name: tag_name.to_string(),
-                bookmarks_count: 0,
-            })
-            .collect::<Vec<_>>(),
+            .map(String::from)
+            .collect::<BTreeSet<_>>(),
     })
     .map_err(ErrorInternalServerError)?;
     Ok(Redirect::to("/").see_other())
 }
 
-#[get("edit-link/{id}/")]
-async fn edit_page(path: Path<u64>) -> Result<HttpResponse> {
+#[get("edit-bookmark/{id}/")]
+async fn edit_page(id: Path<u64>) -> Result<HttpResponse> {
     templates::edit_page(
-        database::get_bookmark_by_id(path.into_inner()).map_err(ErrorInternalServerError)?,
+        database::get_bookmark_by_id(id.into_inner()).map_err(ErrorInternalServerError)?,
     )
     .map_or_else(
         |err| Err(ErrorInternalServerError(err)),
         |body| Ok(HttpResponse::Ok().body(body)),
     )
+}
+
+#[get("delete-bookmark/{id}/")]
+async fn delete_bookmark(id: Path<u64>) -> Result<impl Responder> {
+    database::delete_bookmark(id.into_inner()).map_err(ErrorInternalServerError)?;
+    Ok(Redirect::to("/").see_other())
 }
 
 #[get("tags/")]
@@ -156,6 +161,7 @@ async fn main() -> std::io::Result<()> {
             .service(home_page)
             .service(tags_page)
             .service(edit_page)
+            .service(delete_bookmark)
             .service(add_file_form)
             .service(add_urls_form)
             .service(update_bookmark_form)

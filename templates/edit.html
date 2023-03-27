@@ -13,7 +13,7 @@
     <div>
         <label for="link-tags">Tags space-separated</label>
         <input type="text" id="link-tags" name="tags"
-            value="{{ bookmark.tags | map(attribute="tag_name") | join(sep=" ") }}" placeholder="video, programming" autocomplete="off">
+            value="{{ bookmark.tags | join(sep=" ") }}" placeholder="video programming" autocomplete="off">
         <p class="input-caption">Some special characters are ignored.</p>
     </div>
     <div>
