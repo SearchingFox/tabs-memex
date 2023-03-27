@@ -28,17 +28,17 @@ fn do_nothing_filter(value: &Value, _: &HashMap<String, Value>) -> Result<Value>
 pub fn index_page(bms: Vec<Bookmark>) -> Result<String> {
     let mut ctx = Context::new();
     ctx.insert("bookmarks", &bms);
-    TEMPLATES.render("index.html.tera", &ctx)
+    TEMPLATES.render("index.html", &ctx)
 }
 
 pub fn tags_page(tags: Vec<Tag>) -> Result<String> {
     let mut ctx = Context::new();
     ctx.insert("tags", &tags);
-    TEMPLATES.render("tags.html.tera", &ctx)
+    TEMPLATES.render("tags.html", &ctx)
 }
 
 pub fn edit_page(bookmark: Bookmark) -> Result<String> {
     let mut ctx = Context::new();
     ctx.insert("bookmark", &bookmark);
-    TEMPLATES.render("edit.html.tera", &ctx)
+    TEMPLATES.render("edit.html", &ctx)
 }
