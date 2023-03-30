@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde_json::value::{to_value, Value};
 use tera::{Context, Result, Tera};
 
-use crate::{Bookmark, Tag};
+use crate::types::{Bookmark, Tag};
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {

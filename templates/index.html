@@ -7,7 +7,7 @@
             <a class="edit-bookmark-btn" href="/edit-bookmark/{{ bookmark.id }}/"><button class="btn">Edit</button></a>
             <a class="delete-bookmark-btn" href="/delete-bookmark/{{ bookmark.id }}/"><button class="btn">Delete</button></a>
         </div>
-        <h3 class="p-name"><a class="u-url" href="{{ bookmark.url }}">{{ bookmark.name }}</a></h3>
+        <h3 class="p-name"><a class="u-url" href="{{ bookmark.url }}">{{ bookmark.name | safe }}</a></h3>
 
         <div class="about-bookmark">
             <div>{{ bookmark.tags | join(sep=" ") }}</div>
@@ -21,8 +21,9 @@
     {% endfor %}
 {% endblock main %}
 {% block add %}
-    <div>
-        <form method="post" enctype="multipart/form-data">
+    <details>
+        <summary>Add bookmarks from file</summary>
+        <form method="POST" enctype="multipart/form-data">
             <div>
                 <label for="file">Choose file to upload</label>
                 <input type="file" id="file" name="file" multiple />
@@ -31,9 +32,10 @@
                 <button class="btn" type="submit">Submit</button>
             </div>
         </form>
-    </div>
-    <div>
-        <form action="/add-urls" method="post">
+    </details>
+    <details>
+        <summary>Add bookmarks from clipboard</summary>
+        <form action="/add-urls" method="POST">
             <div>
                 <label for="urls">Add urls</label>
                 <textarea name="urls" cols="40" rows="5"></textarea>
@@ -42,5 +44,8 @@
                 <button class="btn" type="submit">Save</button>
             </div>
         </form>
-    </div>
+    </details>
+    <form action="/search">
+        <input type="search" id="search" name="q" placeholder="Search..." />
+    </form>
 {% endblock add %}

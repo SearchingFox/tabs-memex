@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block head %} Bookmark {{ bookmark.id }} {% endblock head %}
 {% block main %}
-<form action="/update-bookmark/{{ bookmark.id }}" method="post">
+<form action="/update-bookmark/{{ bookmark.id }}" method="POST">
     <div>
         <label for="link-url">URL</label>
         <input type="text" id="link-url" name="url" required value="{{ bookmark.url }}" autocomplete="off">
