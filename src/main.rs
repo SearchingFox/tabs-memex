@@ -20,7 +20,7 @@ async fn main() -> std::io::Result<()> {
     println!("Server started at http://localhost:1739");
     HttpServer::new(|| {
         App::new()
-            .app_data(web::FormConfig::default().limit(131_072))
+            .app_data(web::FormConfig::default().limit(128 * 1024))
             .service(handlers::page)
             .service(handlers::tag_page)
             .service(handlers::date_page)

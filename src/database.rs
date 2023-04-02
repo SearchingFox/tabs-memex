@@ -63,9 +63,12 @@ pub fn insert(bookmarks: Vec<Bookmark>) -> Result<()> {
     let mut stmt =
         conn.prepare("INSERT INTO bookmarks (name, url, creation_time) VALUES (?1, ?2, ?3)")?;
     for b in bookmarks {
-        match stmt.execute(params![b.name, b.url, b.creation_time]) {
-            Err(err) => println!("{}: {}", err, b.url),
-            _ => {}
+        if let Err(err) = stmt.execute(params![
+            b.name.replace('<', "&lt").replace('>', "&gt"),
+            b.url,
+            b.creation_time
+        ]) {
+            println!("{}: {}", err, b.url)
         }
     }
 
@@ -92,7 +95,9 @@ pub fn update_bookmark(b: Bookmark) -> Result<()> {
     }
 
     for new_tag in b.tags.difference(&tags_for_bookmark(b.id)?) {
-        conn.execute("INSERT INTO tags VALUES (?1, ?2)", params![new_tag, b.id])?;
+        if !new_tag.is_empty() {
+            conn.execute("INSERT INTO tags VALUES (?1, ?2)", params![new_tag, b.id])?;
+        }
     }
 
     Ok(())
@@ -139,7 +144,12 @@ pub fn list_all(page: u64) -> Result<Vec<Bookmark>> {
     let conn = Connection::open(FILE_PATH)?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, name, url, creation_time FROM bookmarks ORDER BY creation_time DESC LIMIT 50 OFFSET ?",
+        "SELECT id, name, url, creation_time
+        FROM bookmarks
+        WHERE NOT EXISTS(
+            SELECT 1 FROM tags WHERE tag_name = 'private' AND bookmark_id = id)
+        ORDER BY creation_time DESC
+        LIMIT 50 OFFSET ?",
     )?;
     let res = stmt
         .query_map(params![page * 50], |row| {
@@ -236,6 +246,12 @@ pub fn search(query: String) -> Result<Vec<Bookmark>> {
         .collect();
 
     res
+}
+
+pub fn count_all() -> Result<u64> {
+    let conn = Connection::open(FILE_PATH)?;
+
+    conn.query_row_and_then("SELECT count() FROM bookmarks", [], |row| row.get(0))
 }
 
 pub fn insert_from_lines(input: String) -> Result<()> {

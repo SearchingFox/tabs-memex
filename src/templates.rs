@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use serde_json::value::{to_value, Value};
 use tera::{Context, Result, Tera};
 
-use crate::types::{Bookmark, Tag};
+use crate::{
+    database,
+    types::{Bookmark, Tag},
+};
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
@@ -28,6 +31,7 @@ fn do_nothing_filter(value: &Value, _: &HashMap<String, Value>) -> Result<Value>
 pub fn index_page(bms: Vec<Bookmark>) -> Result<String> {
     let mut ctx = Context::new();
     ctx.insert("bookmarks", &bms);
+    ctx.insert("bookmarks_num", &database::count_all().unwrap_or(0));
     TEMPLATES.render("index.html", &ctx)
 }
 
@@ -38,6 +42,7 @@ pub fn tags_page(tags: Vec<Tag>) -> Result<String> {
 }
 
 pub fn edit_page(bookmark: Bookmark) -> Result<String> {
+    println!("{bookmark:?}");
     let mut ctx = Context::new();
     ctx.insert("bookmark", &bookmark);
     TEMPLATES.render("edit.html", &ctx)

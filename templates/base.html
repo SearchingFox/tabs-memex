@@ -14,16 +14,27 @@
                 <h1>{% block head %}{% endblock head %}</h1>
                 <ul>
                     <li> <a href="/all">All</a> </li>
-                    <li> <a href="/tags/">Categories</a> </li>
+                    <li> <a href="/tags/">Tags</a> </li>
                     <li> <a href="/about/">About</a> </li>
                 </ul>
             </nav>
-        </header>
+            <form action="/search">
+                <input type="search" id="search" name="q" placeholder="Search..." />
+                <p class="input-caption">
+                    <a class="infolink" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">Help</a>
+                </p>
+            </form>
+            <form action="/date">
+                <label for="choose-date">Choose date:</label>
+                <input type="date" id="choose-date" name="d">
+                <button type="submit">Select</button>
+            </form>
+            </header>
         <main>
             {% block main %}{% endblock main %}
         </main>
-        <div>
-            {% block add %}{% endblock add %}
+        <div class="right-bar">
+            {% block rightbar %}{% endblock rightbar %}
         </div>
     </body>
 </html>

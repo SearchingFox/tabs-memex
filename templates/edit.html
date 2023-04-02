@@ -1,24 +1,22 @@
 {% extends "base.html" %}
 {% block head %} Bookmark {{ bookmark.id }} {% endblock head %}
 {% block main %}
-<form action="/update-bookmark/{{ bookmark.id }}" method="POST">
-    <div>
-        <label for="link-url">URL</label>
-        <input type="text" id="link-url" name="url" required value="{{ bookmark.url }}" autocomplete="off">
-    </div>
-    <div>
-        <label for="link-name">Name</label>
-        <input type="text" id="link-name" name="name" required value="{{ bookmark.name }}" autocomplete="off">
-    </div>
-    <div>
-        <label for="link-tags">Tags space-separated</label>
-        <input type="text" id="link-tags" name="tags"
-            value="{{ bookmark.tags | join(sep=" ") }}" placeholder="video programming" autocomplete="off">
-        <p class="input-caption">Some special characters are ignored.</p>
-    </div>
-    <div>
-        <button class="btn" type="submit">Save</button>
-    </div>
-</form>
+    <article>
+        <form action="/edit-bookmark/{{ bookmark.id }}" method="POST">
+            <label>Name
+                <input type="text" name="name" required value="{{ bookmark.name }}" autocomplete="off">
+            </label>
+            <label>URL
+                <input type="text" name="url" required value="{{ bookmark.url }}" autocomplete="off">
+            </label>
+            <label>Tags space-separated
+                <input type="text" id="bookmark-tags" name="tags" value="{{ bookmark.tags | join(sep=" ") }}"
+                    placeholder="video programming" autocomplete="on">
+            </label>
+            <div>
+                <button class="btn" type="submit">Save</button>
+            </div>
+        </form>
+    </article>
 {% endblock main %}
 {% block add %}{% endblock add %}

@@ -2,21 +2,15 @@ use actix_web::{
     error::ErrorInternalServerError,
     get, post,
     web::{Form, Path, Query, Redirect},
-    HttpResponse, Responder, Result,
+    HttpRequest, HttpResponse, Responder, Result,
 };
 use futures_util::StreamExt as _;
 
-use std::collections::BTreeSet;
+use std::collections::HashMap;
 
 use crate::database;
 use crate::templates;
-use crate::types::{AddUrlsForm, Bookmark, EditBookmarkForm, Page, Search};
-
-#[post("/add-urls")]
-async fn add_urls_form(Form(form): Form<AddUrlsForm>) -> Result<impl Responder> {
-    database::insert_from_lines(form.urls).map_err(ErrorInternalServerError)?;
-    Ok(Redirect::to("/all").see_other())
-}
+use crate::types::Bookmark;
 
 #[post("/")]
 async fn add_file_form(mut payload: actix_multipart::Multipart) -> Result<impl Responder> {
@@ -34,33 +28,41 @@ async fn add_file_form(mut payload: actix_multipart::Multipart) -> Result<impl R
     Ok(Redirect::to("/all").see_other())
 }
 
-#[post("/update-bookmark/{id:\\d+}")]
+#[post("/add-urls")]
+async fn add_urls_form(Form(form): Form<HashMap<String, String>>) -> Result<impl Responder> {
+    database::insert_from_lines(form.get("urls").cloned().unwrap())
+        .map_err(ErrorInternalServerError)?;
+    Ok(Redirect::to("/all").see_other())
+}
+
+#[post("/edit-bookmark/{id:\\d+}")]
 async fn update_bookmark_form(
     id: Path<u64>,
-    form: Form<EditBookmarkForm>,
+    form: Form<Bookmark>,
+    req: HttpRequest,
 ) -> Result<impl Responder> {
+    println!("{:?}", req.headers());
     database::update_bookmark(Bookmark {
         id: id.into_inner(),
         name: form.name.clone(),
         url: form.url.clone(),
         creation_time: 0,
-        tags: form
-            .tags
-            .split(' ')
-            .map(String::from)
-            .collect::<BTreeSet<_>>(),
+        tags: form.tags.clone(),
     })
     .map_err(ErrorInternalServerError)?;
     Ok(Redirect::to("/all").see_other())
 }
 
 #[get("/search")]
-async fn search(q: Query<Search>) -> Result<HttpResponse> {
-    templates::index_page(database::search(q.q.clone()).map_err(ErrorInternalServerError)?)
-        .map_or_else(
-            |err| Err(ErrorInternalServerError(err)),
-            |body| Ok(HttpResponse::Ok().body(body)),
-        )
+async fn search(q: Query<HashMap<String, String>>) -> Result<HttpResponse> {
+    templates::index_page(
+        database::search(q.get("q").cloned().unwrap_or_default())
+            .map_err(ErrorInternalServerError)?,
+    )
+    .map_or_else(
+        |err| Err(ErrorInternalServerError(err)),
+        |body| Ok(HttpResponse::Ok().body(body)),
+    )
 }
 
 #[get("edit-bookmark/{id:\\d+}/")]
@@ -99,10 +101,11 @@ async fn tag_page(name: Path<String>) -> Result<HttpResponse> {
     )
 }
 
-#[get("date/{date}/")]
-async fn date_page(date: Path<String>) -> Result<HttpResponse> {
+#[get("/date")]
+async fn date_page(date: Query<HashMap<String, String>>) -> Result<HttpResponse> {
     templates::index_page(
-        database::get_bookmarks_by_date(date.into_inner()).map_err(ErrorInternalServerError)?,
+        database::get_bookmarks_by_date(date.get("d").unwrap().clone())
+            .map_err(ErrorInternalServerError)?,
     )
     .map_or_else(
         |err| Err(ErrorInternalServerError(err)),
@@ -111,9 +114,10 @@ async fn date_page(date: Path<String>) -> Result<HttpResponse> {
 }
 
 #[get("/all")]
-async fn page(page: Query<Page>) -> Result<HttpResponse> {
+async fn page(page: Query<HashMap<String, u64>>) -> Result<HttpResponse> {
     templates::index_page(
-        database::list_all(page.p.unwrap_or_default()).map_err(ErrorInternalServerError)?,
+        database::list_all(page.get("p").cloned().unwrap_or_default())
+            .map_err(ErrorInternalServerError)?,
     )
     .map_or_else(
         |err| Err(ErrorInternalServerError(err)),
