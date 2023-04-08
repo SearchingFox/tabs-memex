@@ -20,6 +20,7 @@ async fn main() -> std::io::Result<()> {
     println!("Server started at http://localhost:1739");
     HttpServer::new(|| {
         App::new()
+            // .wrap(NormalizePath::trim())
             .app_data(web::FormConfig::default().limit(128 * 1024))
             .service(handlers::page)
             .service(handlers::tag_page)
@@ -31,6 +32,7 @@ async fn main() -> std::io::Result<()> {
             .service(handlers::add_file_form)
             .service(handlers::add_urls_form)
             .service(handlers::update_bookmark_form)
+        // .service(handlers::favicon)
     })
     .bind(("127.0.0.1", 1739))?
     .run()

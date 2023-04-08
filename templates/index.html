@@ -4,18 +4,19 @@
     {% for bookmark in bookmarks %}
     <article class="h-entry">
         <div class="edit-bookmark-buttons">
-            <a class="edit-bookmark-btn" href="/edit-bookmark/{{ bookmark.id }}/">Edit</a>
-            <a class="delete-bookmark-btn" href="/delete-bookmark/{{ bookmark.id }}/">Delete</a>
+            <a class="edit-bookmark-btn" href="/edit-bookmark/{{ bookmark.id }}">✏️</a>
+            <a class="delete-bookmark-btn" href="/delete-bookmark/{{ bookmark.id }}">🗑️</a>
         </div>
         <h3 class="p-name"><a class="u-url" href="{{ bookmark.url | safe }}">{{ bookmark.name | safe }}</a></h3>
 
         <div class="about-bookmark">
-            <div>{{ bookmark.tags | join(sep=" ") }}</div>
-            <time>
-                <a href="/date?d={{ bookmark.creation_time | date(format="%Y-%m-%d") }}/">
-                    {{ bookmark.creation_time | date(format="%Y-%m-%d %H:%M") }}
-                </a>
-            </time>
+            <div class="bookmark-tags">
+                {% for tag in bookmark.tags %}
+                    <a href="/tags/{{tag}}">#{{tag}}</a>
+                {% endfor %}
+            </div>
+            <time>{{ bookmark.creation_time | date(format="%Y-%m-%d %H:%M", timezone="Asia/Vladivostok") }}</time>
+                <!-- <a href="/date?d={{ bookmark.creation_time | date(format="%Y-%m-%d") }}/"></a></time> -->
         </div>
     </article>
     {% endfor %}
@@ -34,9 +35,9 @@
     </details>
     <details>
         <summary>Add bookmarks from clipboard</summary>
-        <form action="/add-urls" method="POST">
+        <form class="add-bookmarks" method="POST">
             <div>
-                <textarea name="urls" cols="39" rows="5"></textarea>
+                <textarea name="urls"></textarea>
             </div>
             <div>
                 <button class="btn" type="submit">Save</button>

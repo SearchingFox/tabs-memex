@@ -41,14 +41,14 @@ pub fn init() -> Result<()> {
 
         conn.execute(
             "CREATE TRIGGER bookmarks_ai AFTER INSERT ON bookmarks BEGIN
-                INSERT INTO fts(rowid, name, url) VALUES (new.id, new.name, new.url);
+                INSERT INTO fts(rowid, name, url, creation_time) VALUES (new.id, new.name, new.url, new.creation_time);
              END;
             CREATE TRIGGER bookmarks_ad AFTER DELETE ON bookmarks BEGIN
-                INSERT INTO fts(fts, rowid, name, url) VALUES('delete', old.id, old.name, old.url);
+                INSERT INTO fts(fts, rowid, name, url, creation_time) VALUES('delete', old.id, old.name, old.url , old.creation_time);
             END;
             CREATE TRIGGER bookmarks_au AFTER UPDATE ON bookmarks BEGIN
-                INSERT INTO fts(fts, rowid, name, url) VALUES('delete', old.id, old.name, old.url);
-                INSERT INTO fts(fts, rowid, name, url) VALUES (new.id, new.name, new.url);
+                INSERT INTO fts(fts, rowid, name, url, creation_time) VALUES('delete', old.id, old.name, old.url, old.creation_time);
+                INSERT INTO fts(fts, rowid, name, url, creation_time) VALUES (new.id, new.name, new.url, new.creation_time);
             END;",
             (),
         )?;
@@ -117,7 +117,7 @@ pub fn tags_for_bookmark(id: u64) -> Result<BTreeSet<String>> {
 
     let mut stmt = conn.prepare("SELECT DISTINCT tag_name FROM tags WHERE bookmark_id = :id")?;
     let res = stmt
-        .query_map(named_params! {":id": id.to_string()}, |row| Ok(row.get(0)?))?
+        .query_map(named_params! {":id": id.to_string()}, |row| row.get(0))?
         .collect();
 
     res
@@ -149,10 +149,10 @@ pub fn list_all(page: u64) -> Result<Vec<Bookmark>> {
         WHERE NOT EXISTS(
             SELECT 1 FROM tags WHERE tag_name = 'private' AND bookmark_id = id)
         ORDER BY creation_time DESC
-        LIMIT 50 OFFSET ?",
+        LIMIT ?1 OFFSET ?2",
     )?;
     let res = stmt
-        .query_map(params![page * 50], |row| {
+        .query_map(params![100, page * 100], |row| {
             Ok(Bookmark {
                 id: row.get(0)?,
                 name: row.get(1)?,
@@ -169,17 +169,19 @@ pub fn list_all(page: u64) -> Result<Vec<Bookmark>> {
 pub fn get_bookmark_by_id(id: u64) -> Result<Bookmark> {
     let conn = Connection::open(FILE_PATH)?;
 
-    let mut stmt =
-        conn.prepare("SELECT id, name, url, creation_time FROM bookmarks WHERE id = ?")?;
-    stmt.query_row(params![id], |row| {
-        Ok(Bookmark {
-            id: row.get(0)?,
-            name: row.get(1)?,
-            url: row.get(2)?,
-            creation_time: row.get(3)?,
-            tags: tags_for_bookmark(id)?,
-        })
-    })
+    conn.query_row(
+        "SELECT id, name, url, creation_time FROM bookmarks WHERE id = ?",
+        params![id],
+        |row| {
+            Ok(Bookmark {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                url: row.get(2)?,
+                creation_time: row.get(3)?,
+                tags: tags_for_bookmark(id)?,
+            })
+        },
+    )
 }
 
 pub fn get_bookmarks_by_tag(tag_name: String) -> Result<Vec<Bookmark>> {
@@ -230,8 +232,9 @@ pub fn search(query: String) -> Result<Vec<Bookmark>> {
     let mut stmt = conn.prepare(
         "SELECT rowid, highlight(fts, 0, '<mark>', '</mark>') name, url, creation_time
          FROM fts WHERE fts MATCH ?
-         ORDER BY creation_time DESC",
+         ORDER BY bm25(fts)",
     )?;
+    // ORDER BY creation_time DESC
 
     let res = stmt
         .query_map(params![query], |row| {
@@ -252,6 +255,13 @@ pub fn count_all() -> Result<u64> {
     let conn = Connection::open(FILE_PATH)?;
 
     conn.query_row_and_then("SELECT count() FROM bookmarks", [], |row| row.get(0))
+}
+
+pub fn exists(url: String) -> Result<bool> {
+    let conn = Connection::open(FILE_PATH)?;
+    let mut stmt = conn.prepare("SELECT 1 FROM bookmarks WHERE url = ?")?;
+
+    stmt.exists(params![url])
 }
 
 pub fn insert_from_lines(input: String) -> Result<()> {

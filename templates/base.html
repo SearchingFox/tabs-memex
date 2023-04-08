@@ -14,8 +14,8 @@
                 <h1>{% block head %}{% endblock head %}</h1>
                 <ul>
                     <li> <a href="/all">All</a> </li>
-                    <li> <a href="/tags/">Tags</a> </li>
-                    <li> <a href="/about/">About</a> </li>
+                    <li> <a href="/tags">Tags</a> </li>
+                    <li> <a href="/about">About</a> </li>
                 </ul>
             </nav>
             <form action="/search">
@@ -26,8 +26,12 @@
             </form>
             <form action="/date">
                 <label for="choose-date">Choose date:</label>
-                <input type="date" id="choose-date" name="d">
-                <button type="submit">Select</button>
+                <input type="date" id="choose-date" name="d" onchange="this.form.submit();">
+                <!-- <button type="submit">Select</button> -->
+            </form>
+            <button onclick="document.body.classList.toggle('dark-mode');">Click me</button>
+            <!-- <form action="/raw-query/">
+                <input type="text" id="raw-query" name="q" placeholder="Query..." /> -->
             </form>
             </header>
         <main>

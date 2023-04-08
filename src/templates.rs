@@ -17,7 +17,7 @@ lazy_static! {
                 ::std::process::exit(1);
             }
         };
-        tera.autoescape_on(vec!["html", ".sql"]);
+        tera.autoescape_on(vec![".html", ".sql"]);
         tera.register_filter("do_nothing", do_nothing_filter);
         tera
     };
@@ -42,8 +42,7 @@ pub fn tags_page(tags: Vec<Tag>) -> Result<String> {
 }
 
 pub fn edit_page(bookmark: Bookmark) -> Result<String> {
-    println!("{bookmark:?}");
     let mut ctx = Context::new();
-    ctx.insert("bookmark", &bookmark);
+    ctx.try_insert("bookmark", &bookmark)?;
     TEMPLATES.render("edit.html", &ctx)
 }
