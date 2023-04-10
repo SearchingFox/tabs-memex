@@ -14,44 +14,31 @@ pub fn init() -> Result<()> {
     if !Path::new(FILE_PATH).exists() {
         let conn = Connection::open(FILE_PATH)?;
 
-        conn.execute(
+        conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS bookmarks (
-            id             INTEGER PRIMARY KEY AUTOINCREMENT,
-            url            TEXT NOT NULL CHECK (url <> '') UNIQUE,
-            name           TEXT NOT NULL,
-            creation_time  INTEGER NOT NULL
-        )",
-            (),
-        )?;
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                url            TEXT NOT NULL CHECK (url <> '') UNIQUE,
+                name           TEXT NOT NULL,
+                creation_time  INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS tags (
+                tag_name       TEXT NOT NULL,
+                bookmark_id    INTEGER NOT NULL,
+                UNIQUE (tag_name, bookmark_id) ON CONFLICT IGNORE
+            );
 
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS tags (
-            tag_name       TEXT NOT NULL,
-            bookmark_id    INTEGER NOT NULL,
-            UNIQUE (tag_name, bookmark_id) ON CONFLICT IGNORE
-        )",
-            (),
-        )?;
-
-        conn.execute(
-            "CREATE VIRTUAL TABLE IF NOT EXISTS fts
-             USING fts5(name, url, creation_time UNINDEXED, content='bookmarks', content_rowid='id')",
-            (),
-        )?;
-
-        conn.execute(
-            "CREATE TRIGGER bookmarks_ai AFTER INSERT ON bookmarks BEGIN
-                INSERT INTO fts(rowid, name, url, creation_time) VALUES (new.id, new.name, new.url, new.creation_time);
-             END;
+            CREATE VIRTUAL TABLE IF NOT EXISTS bookmarks_fts
+                USING fts5(name, url, creation_time UNINDEXED, content='bookmarks', content_rowid='id');
+            CREATE TRIGGER bookmarks_ai AFTER INSERT ON bookmarks BEGIN
+                INSERT INTO bookmarks_fts(rowid, name, url, creation_time) VALUES (new.id, new.name, new.url, new.creation_time);
+            END;
             CREATE TRIGGER bookmarks_ad AFTER DELETE ON bookmarks BEGIN
-                INSERT INTO fts(fts, rowid, name, url, creation_time) VALUES('delete', old.id, old.name, old.url , old.creation_time);
+                INSERT INTO bookmarks_fts(bookmarks_fts, rowid, name, url, creation_time) VALUES('delete', old.id, old.name, old.url, old.creation_time);
             END;
             CREATE TRIGGER bookmarks_au AFTER UPDATE ON bookmarks BEGIN
-                INSERT INTO fts(fts, rowid, name, url, creation_time) VALUES('delete', old.id, old.name, old.url, old.creation_time);
-                INSERT INTO fts(fts, rowid, name, url, creation_time) VALUES (new.id, new.name, new.url, new.creation_time);
-            END;",
-            (),
-        )?;
+                INSERT INTO bookmarks_fts(bookmarks_fts, rowid, name, url, creation_time) VALUES('delete', old.id, old.name, old.url, old.creation_time);
+                INSERT INTO bookmarks_fts(rowid, name, url, creation_time) VALUES (new.id, new.name, new.url, new.creation_time);
+            END;")?;
     };
 
     Ok(())
@@ -230,9 +217,9 @@ pub fn search(query: String) -> Result<Vec<Bookmark>> {
     let conn = Connection::open(FILE_PATH)?;
 
     let mut stmt = conn.prepare(
-        "SELECT rowid, highlight(fts, 0, '<mark>', '</mark>') name, url, creation_time
-         FROM fts WHERE fts MATCH ?
-         ORDER BY bm25(fts)",
+        "SELECT rowid, highlight(bookmarks_fts, 0, '<mark>', '</mark>') name, url, creation_time
+         FROM bookmarks_fts WHERE bookmarks_fts MATCH ?
+         ORDER BY bm25(bookmarks_fts)",
     )?;
     // ORDER BY creation_time DESC
 

@@ -32,7 +32,7 @@ async fn main() -> std::io::Result<()> {
             .service(handlers::add_file_form)
             .service(handlers::add_urls_form)
             .service(handlers::update_bookmark_form)
-        // .service(handlers::favicon)
+            .service(handlers::style)
     })
     .bind(("127.0.0.1", 1739))?
     .run()

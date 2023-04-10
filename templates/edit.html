@@ -1,20 +1,19 @@
 {% extends "base.html" %}
-{% block head %} Bookmark {{ bookmark.id }} {% endblock head %}
+{% block head %} BookmarkID {{ id }} {% endblock head %}
 {% block main %}
     <article>
-        <form action="/edit-bookmark/{{ bookmark.id }}" method="POST">
-            <label for="link-name">Name</label>
-            <input type="text" name="name" required value="{{ bookmark.name }}" autocomplete="off">
+        <form action="/edit-bookmark/{{ id }}" method="POST">
+            <label for="bookmark-name">Name</label>
+            <input required type="text" name="bookmark-name" value="{{ name }}" autocomplete="off">
 
-            <label for="link-url">URL</label>
-            <input type="text" name="url" required value="{{ bookmark.url }}" autocomplete="off">
+            <label for="bookmark-url">URL</label>
+            <input required type="text" name="bookmark-url" value="{{ url }}" autocomplete="off">
 
-            <label for="link-tags">Tags space-separated</label>
+            <label for="bookmark-tags">Tags space-separated</label>
             <input type="text" id="bookmark-tags" name="tags"
-                value="{{ bookmark.tags | join(sep=" ") }}" placeholder="video programming" autocomplete="on">
-            <div>
-                <button class="btn" type="submit">Save</button>
-            </div>
+                value="{{ tags | join(sep=" ") }}" placeholder="video programming" autocomplete="on">
+
+            <button class="btn" type="submit">Save</button>
         </form>
     </article>
 {% endblock main %}

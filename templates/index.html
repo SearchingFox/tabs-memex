@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block head %} Bookmarks {{ bookmarks_num }} {% endblock head %}
+{% block head %} Bookmarks {{ number }} {% endblock head %}
 {% block main %}
     {% for bookmark in bookmarks %}
     <article class="h-entry">
-        <div class="edit-bookmark-buttons">
-            <a class="edit-bookmark-btn" href="/edit-bookmark/{{ bookmark.id }}">✏️</a>
-            <a class="delete-bookmark-btn" href="/delete-bookmark/{{ bookmark.id }}">🗑️</a>
-        </div>
-        <h3 class="p-name"><a class="u-url" href="{{ bookmark.url | safe }}">{{ bookmark.name | safe }}</a></h3>
+        <div class="bookmark">
+            <h3 class="p-name"><a class="u-url" href="{{ bookmark.url | safe }}">{{ bookmark.name | safe }}</a></h3>
 
+            <a class="edit-bookmark-btn emoji" href="/edit-bookmark/{{ bookmark.id }}">✏️</a>
+            <a class="delete-bookmark-btn emoji" href="/delete-bookmark/{{ bookmark.id }}">🗑️</a>
+        </div>
         <div class="about-bookmark">
             <div class="bookmark-tags">
                 {% for tag in bookmark.tags %}
@@ -20,28 +20,22 @@
         </div>
     </article>
     {% endfor %}
+    {% for i in range(end=pages) %}
+        <a href="/all?p={{i}}">{{i}}</a>
+    {% endfor %}
 {% endblock main %}
 {% block rightbar %}
     <details>
+        <summary>Add bookmarks</summary>
         <summary>Add bookmarks from file</summary>
         <form method="POST" enctype="multipart/form-data">
-            <div>
-                <input type="file" id="file" name="file" multiple />
-            </div>
-            <div>
-                <button class="btn" type="submit">Submit</button>
-            </div>
+            <input type="file" id="file" name="file" multiple />
+            <button class="btn" type="submit">Submit</button>
         </form>
-    </details>
-    <details>
         <summary>Add bookmarks from clipboard</summary>
-        <form class="add-bookmarks" method="POST">
-            <div>
-                <textarea name="urls"></textarea>
-            </div>
-            <div>
-                <button class="btn" type="submit">Save</button>
-            </div>
+        <form method="POST" action="/add-urls">
+            <textarea name="urls"></textarea>
+            <button class="btn" type="submit">Save</button>
         </form>
     </details>
 {% endblock rightbar %}

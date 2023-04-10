@@ -1,7 +1,8 @@
+use actix_files::NamedFile;
 use actix_web::{
     error::ErrorInternalServerError,
     get,
-    http::header,
+    http::header::REFERER,
     post,
     web::{Form, Path, Query, Redirect},
     HttpRequest, HttpResponse, Responder, Result,
@@ -14,7 +15,7 @@ use crate::database;
 use crate::templates;
 use crate::types::Bookmark;
 
-#[post("/")]
+#[post("/all")]
 async fn add_file_form(mut payload: actix_multipart::Multipart) -> Result<impl Responder> {
     while let Some(item) = payload.next().await {
         let mut field = item?;
@@ -30,7 +31,7 @@ async fn add_file_form(mut payload: actix_multipart::Multipart) -> Result<impl R
     Ok(Redirect::to("/all").see_other())
 }
 
-#[post("/")]
+#[post("/add-urls")]
 async fn add_urls_form(Form(form): Form<HashMap<String, String>>) -> Result<impl Responder> {
     database::insert_from_lines(form.get("urls").cloned().unwrap())
         .map_err(ErrorInternalServerError)?;
@@ -67,7 +68,7 @@ async fn delete_bookmark(req: HttpRequest, id: Path<u64>) -> Result<impl Respond
     database::delete_bookmark(id.into_inner()).map_err(ErrorInternalServerError)?;
     Ok(Redirect::to(
         req.headers()
-            .get(header::REFERER)
+            .get(REFERER)
             .map_or(Ok("/all"), |x| x.to_str())
             .map(String::from)
             .map_err(ErrorInternalServerError)?,
@@ -85,10 +86,10 @@ async fn tags_page() -> Result<HttpResponse> {
 
 #[get("/tags/{name}")]
 async fn tag_page(name: Path<String>) -> Result<HttpResponse> {
-    templates::index_page(
-        database::get_bookmarks_by_tag(name.into_inner()).map_err(ErrorInternalServerError)?,
-    )
-    .map_or_else(
+    let found =
+        database::get_bookmarks_by_tag(name.into_inner()).map_err(ErrorInternalServerError)?;
+    let len = found.len() as u64;
+    templates::index_page(found, len, 0).map_or_else(
         |err| Err(ErrorInternalServerError(err)),
         |body| Ok(HttpResponse::Ok().body(body)),
     )
@@ -96,11 +97,10 @@ async fn tag_page(name: Path<String>) -> Result<HttpResponse> {
 
 #[get("/date")]
 async fn date_page(date: Query<HashMap<String, String>>) -> Result<HttpResponse> {
-    templates::index_page(
-        database::get_bookmarks_by_date(date.get("d").unwrap().clone())
-            .map_err(ErrorInternalServerError)?,
-    )
-    .map_or_else(
+    let found = database::get_bookmarks_by_date(date.get("d").unwrap().clone())
+        .map_err(ErrorInternalServerError)?;
+    let len = found.len() as u64;
+    templates::index_page(found, len, 0).map_or_else(
         |err| Err(ErrorInternalServerError(err)),
         |body| Ok(HttpResponse::Ok().body(body)),
     )
@@ -111,6 +111,8 @@ async fn page(page: Query<HashMap<String, u64>>) -> Result<HttpResponse> {
     templates::index_page(
         database::list_all(page.get("p").cloned().unwrap_or_default())
             .map_err(ErrorInternalServerError)?,
+        database::count_all().unwrap_or(0),
+        database::count_all().map_err(ErrorInternalServerError)? / 100 + 1,
     )
     .map_or_else(
         |err| Err(ErrorInternalServerError(err)),
@@ -119,18 +121,23 @@ async fn page(page: Query<HashMap<String, u64>>) -> Result<HttpResponse> {
 }
 
 #[get("/search")]
-async fn search(q: Query<HashMap<String, String>>) -> Result<HttpResponse> {
-    templates::index_page(
-        database::search(q.get("q").cloned().unwrap_or_default())
-            .map_err(ErrorInternalServerError)?,
-    )
-    .map_or_else(
+async fn search(req: HttpRequest, q: Query<HashMap<String, String>>) -> Result<HttpResponse> {
+    println!("{:?}", req.headers().get(REFERER));
+    let found = database::search(q.get("q").cloned().unwrap_or_default())
+        .map_err(ErrorInternalServerError)?;
+    let len = found.len() as u64;
+    templates::index_page(found, len, 0).map_or_else(
         |err| Err(ErrorInternalServerError(err)),
         |body| Ok(HttpResponse::Ok().body(body)),
     )
 }
 
+#[get("/style.css")]
+async fn style() -> impl Responder {
+    NamedFile::open_async("./templates/style.css").await
+}
+
 // #[get("/favicon")]
 // async fn favicon() -> impl Responder {
-//     NamedFile::open_async("./favicon.ico").await
+//     NamedFile::open_async("./templates/favicon.ico").await
 // }

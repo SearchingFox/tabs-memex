@@ -4,9 +4,7 @@
         <title>All bookmarks</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-            {% include "style.css" %}
-        </style>
+        <link rel="stylesheet" href="/style.css">
     </head>
     <body>
         <header>
@@ -17,28 +15,28 @@
                     <li> <a href="/tags">Tags</a> </li>
                     <li> <a href="/about">About</a> </li>
                 </ul>
+                <form class="search" action="/search">
+                    <input type="search" id="search" name="q" placeholder="Search..." />
+                    <p class="input-caption">
+                        <a class="infolink emoji" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">❔</a>
+                    </p>
+                </form>
             </nav>
-            <form action="/search">
-                <input type="search" id="search" name="q" placeholder="Search..." />
-                <p class="input-caption">
-                    <a class="infolink" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">Help</a>
-                </p>
-            </form>
-            <form action="/date">
-                <label for="choose-date">Choose date:</label>
-                <input type="date" id="choose-date" name="d" onchange="this.form.submit();">
-                <!-- <button type="submit">Select</button> -->
-            </form>
-            <button onclick="document.body.classList.toggle('dark-mode');">Click me</button>
-            <!-- <form action="/raw-query/">
-                <input type="text" id="raw-query" name="q" placeholder="Query..." /> -->
-            </form>
-            </header>
+        </header>
         <main>
             {% block main %}{% endblock main %}
         </main>
         <div class="right-bar">
             {% block rightbar %}{% endblock rightbar %}
+            <details>
+                <form action="/date">
+                    <input type="date" id="choose-date" name="d" onchange="this.form.submit();">
+                </form>
+                <button class="btn" onclick="document.body.classList.toggle('dark-mode');">Theme</button>
+                <!-- <form action="/raw-query/">
+                    <input type="text" id="raw-query" name="q" placeholder="Query..." /> -->
+                <!-- </form> -->
+            </details>
         </div>
     </body>
 </html>

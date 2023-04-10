@@ -1,37 +1,24 @@
-use std::collections::HashMap;
-
-use serde_json::value::{to_value, Value};
 use tera::{Context, Result, Tera};
 
-use crate::{
-    database,
-    types::{Bookmark, Tag},
-};
+use crate::types::{Bookmark, Tag};
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
-        let mut tera = match Tera::new("templates/**/*") {
+        match Tera::new("templates/**/*.html") {
             Ok(t) => t,
             Err(e) => {
                 println!("Parsing error(s): {}", e);
                 ::std::process::exit(1);
             }
-        };
-        tera.autoescape_on(vec![".html", ".sql"]);
-        tera.register_filter("do_nothing", do_nothing_filter);
-        tera
+        }
     };
 }
 
-fn do_nothing_filter(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
-    let s = try_get_value!("do_nothing_filter", "value", String, value);
-    Ok(to_value(s).unwrap())
-}
-
-pub fn index_page(bms: Vec<Bookmark>) -> Result<String> {
+pub fn index_page(bms: Vec<Bookmark>, num: u64, pages: u64) -> Result<String> {
     let mut ctx = Context::new();
     ctx.insert("bookmarks", &bms);
-    ctx.insert("bookmarks_num", &database::count_all().unwrap_or(0));
+    ctx.insert("number", &num);
+    ctx.insert("pages", &pages);
     TEMPLATES.render("index.html", &ctx)
 }
 
@@ -42,7 +29,5 @@ pub fn tags_page(tags: Vec<Tag>) -> Result<String> {
 }
 
 pub fn edit_page(bookmark: Bookmark) -> Result<String> {
-    let mut ctx = Context::new();
-    ctx.try_insert("bookmark", &bookmark)?;
-    TEMPLATES.render("edit.html", &ctx)
+    TEMPLATES.render("edit.html", &Context::from_serialize(bookmark)?)
 }
