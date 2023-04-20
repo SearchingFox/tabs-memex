@@ -28,7 +28,7 @@ pub fn init() -> Result<()> {
             );
 
             CREATE VIRTUAL TABLE IF NOT EXISTS bookmarks_fts
-                USING fts5(name, url, creation_time UNINDEXED, content='bookmarks', content_rowid='id');
+                USING fts5(name, url, creation_time UNINDEXED, content='bookmarks', content_rowid='id', tokenize='trigram');
             CREATE TRIGGER bookmarks_ai AFTER INSERT ON bookmarks BEGIN
                 INSERT INTO bookmarks_fts(rowid, name, url, creation_time) VALUES (new.id, new.name, new.url, new.creation_time);
             END;
@@ -45,21 +45,23 @@ pub fn init() -> Result<()> {
 }
 
 pub fn insert(bookmarks: Vec<Bookmark>) -> Result<()> {
-    let conn = Connection::open(FILE_PATH)?;
+    let mut conn = Connection::open(FILE_PATH)?;
+    let tx = conn.transaction()?;
 
-    let mut stmt =
-        conn.prepare("INSERT INTO bookmarks (name, url, creation_time) VALUES (?1, ?2, ?3)")?;
     for b in bookmarks {
-        if let Err(err) = stmt.execute(params![
-            b.name.replace('<', "&lt").replace('>', "&gt"),
-            b.url,
-            b.creation_time
-        ]) {
+        if let Err(err) = tx.execute(
+            "INSERT INTO bookmarks (name, url, creation_time) VALUES (?1, ?2, ?3)",
+            params![
+                b.name.replace('<', "&lt").replace('>', "&gt"),
+                b.url,
+                b.creation_time
+            ],
+        ) {
             println!("{}: {}", err, b.url)
         }
     }
 
-    Ok(())
+    tx.commit()
 }
 
 pub fn update_bookmark(b: Bookmark) -> Result<()> {
@@ -192,7 +194,7 @@ pub fn get_bookmarks_by_tag(tag_name: String) -> Result<Vec<Bookmark>> {
     res
 }
 
-pub fn get_bookmarks_by_date(date: String) -> Result<Vec<Bookmark>> {
+pub fn get_bookmarks_by_date(date: &String) -> Result<Vec<Bookmark>> {
     let conn = Connection::open(FILE_PATH)?;
 
     let mut stmt = conn.prepare(
@@ -213,7 +215,7 @@ pub fn get_bookmarks_by_date(date: String) -> Result<Vec<Bookmark>> {
     res
 }
 
-pub fn search(query: String) -> Result<Vec<Bookmark>> {
+pub fn search(query: &String) -> Result<Vec<Bookmark>> {
     let conn = Connection::open(FILE_PATH)?;
 
     let mut stmt = conn.prepare(
@@ -221,9 +223,8 @@ pub fn search(query: String) -> Result<Vec<Bookmark>> {
          FROM bookmarks_fts WHERE bookmarks_fts MATCH ?
          ORDER BY bm25(bookmarks_fts)",
     )?;
-    // ORDER BY creation_time DESC
 
-    let res = stmt
+    let mut res: Vec<Bookmark> = stmt
         .query_map(params![query], |row| {
             Ok(Bookmark {
                 id: row.get(0)?,
@@ -233,9 +234,31 @@ pub fn search(query: String) -> Result<Vec<Bookmark>> {
                 tags: tags_for_bookmark(row.get(0)?)?,
             })
         })?
-        .collect();
+        .collect::<Result<Vec<Bookmark>>>()
+        .unwrap_or(Vec::new());
 
-    res
+    if res.is_empty() {
+        let mut stmt = conn.prepare(
+            "SELECT id, name, url, creation_time
+             FROM bookmarks WHERE url LIKE '%?%' OR name LIKE '%?%'
+             ORDER BY creation_time DESC",
+        )?;
+
+        res = stmt
+            .query_map(params![query], |row| {
+                Ok(Bookmark {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    url: row.get(2)?,
+                    creation_time: row.get(3)?,
+                    tags: tags_for_bookmark(row.get(0)?)?,
+                })
+            })?
+            .collect::<Result<Vec<Bookmark>>>()
+            .unwrap_or(Vec::new());
+    }
+
+    Ok(res)
 }
 
 pub fn count_all() -> Result<u64> {
