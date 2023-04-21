@@ -66,6 +66,7 @@ async fn edit_page(id: Path<u64>) -> Result<HttpResponse> {
 #[get("/delete-bookmark/{id:\\d+}")]
 async fn delete_bookmark(req: HttpRequest, id: Path<u64>) -> Result<impl Responder> {
     database::delete_bookmark(id.into_inner()).map_err(ErrorInternalServerError)?;
+
     Ok(Redirect::to(
         req.headers()
             .get(REFERER)
@@ -95,17 +96,6 @@ async fn tag_page(name: Path<String>) -> Result<HttpResponse> {
     )
 }
 
-#[get("/date")]
-async fn date_page(date: Query<HashMap<String, String>>) -> Result<HttpResponse> {
-    let found = database::get_bookmarks_by_date(date.get("d").unwrap().clone())
-        .map_err(ErrorInternalServerError)?;
-    let len = found.len() as u64;
-    templates::index_page(found, len, 0).map_or_else(
-        |err| Err(ErrorInternalServerError(err)),
-        |body| Ok(HttpResponse::Ok().body(body)),
-    )
-}
-
 #[get("/all")]
 async fn page(page: Query<HashMap<String, u64>>) -> Result<HttpResponse> {
     templates::index_page(
@@ -123,8 +113,15 @@ async fn page(page: Query<HashMap<String, u64>>) -> Result<HttpResponse> {
 #[get("/search")]
 async fn search(req: HttpRequest, q: Query<HashMap<String, String>>) -> Result<HttpResponse> {
     println!("{:?}", req.headers().get(REFERER));
-    let found = database::search(q.get("q").cloned().unwrap_or_default())
-        .map_err(ErrorInternalServerError)?;
+
+    let found = match q.iter().next() {
+        Some((k, v)) if k == "d" => {
+            database::get_bookmarks_by_date(v).map_err(ErrorInternalServerError)?
+        }
+        Some((k, v)) if k == "q" => database::search(v).map_err(ErrorInternalServerError)?,
+        _ => Vec::new(),
+    };
+
     let len = found.len() as u64;
     templates::index_page(found, len, 0).map_or_else(
         |err| Err(ErrorInternalServerError(err)),

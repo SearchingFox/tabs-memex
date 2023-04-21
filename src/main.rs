@@ -24,7 +24,6 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::FormConfig::default().limit(128 * 1024))
             .service(handlers::page)
             .service(handlers::tag_page)
-            .service(handlers::date_page)
             .service(handlers::tags_page)
             .service(handlers::edit_page)
             .service(handlers::delete_bookmark)
