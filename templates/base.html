@@ -9,18 +9,20 @@
     <body>
         <header>
             <nav>
-                <h1>{% block head %}{% endblock head %}</h1>
+                <h1>
+                    {% block head %}{% endblock head %}
+                </h1>
+                <form class="search" action="/search">
+                    <input type="search" id="search" name="q" placeholder="Search..." />
+                    <p>
+                        <a class="emoji" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">❔</a>
+                    </p>
+                </form>
                 <ul>
                     <li> <a href="/all">All</a> </li>
                     <li> <a href="/tags">Tags</a> </li>
                     <li> <a href="/about">About</a> </li>
                 </ul>
-                <form class="search" action="/search">
-                    <input type="search" id="search" name="q" placeholder="Search..." />
-                    <p class="input-caption">
-                        <a class="infolink emoji" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">❔</a>
-                    </p>
-                </form>
             </nav>
         </header>
         <main>
@@ -28,15 +30,9 @@
         </main>
         <div class="right-bar">
             {% block rightbar %}{% endblock rightbar %}
-            <details>
-                <form action="/date">
-                    <input type="date" id="choose-date" name="d" onchange="this.form.submit();">
-                </form>
-                <button class="btn" onclick="document.body.classList.toggle('dark-mode');">Theme</button>
-                <!-- <form action="/raw-query/">
-                    <input type="text" id="raw-query" name="q" placeholder="Query..." /> -->
-                <!-- </form> -->
-            </details>
+            <form action="/search">
+                <input type="date" class="choose-date" name="d" onchange="this.form.submit();">
+            </form>
         </div>
     </body>
 </html>

@@ -16,15 +16,15 @@ lazy_static! {
 
 pub fn index_page(bms: Vec<Bookmark>, num: u64, pages: u64) -> Result<String> {
     let mut ctx = Context::new();
-    ctx.insert("bookmarks", &bms);
-    ctx.insert("number", &num);
-    ctx.insert("pages", &pages);
+    ctx.try_insert("bookmarks", &bms)?;
+    ctx.try_insert("number", &num)?;
+    ctx.try_insert("pages", &pages)?;
     TEMPLATES.render("index.html", &ctx)
 }
 
 pub fn tags_page(tags: Vec<Tag>) -> Result<String> {
     let mut ctx = Context::new();
-    ctx.insert("tags", &tags);
+    ctx.try_insert("tags", &tags)?;
     TEMPLATES.render("tags.html", &ctx)
 }
 

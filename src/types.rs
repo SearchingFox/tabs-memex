@@ -12,8 +12,8 @@ pub struct Bookmark {
     pub creation_time: u64, // maybe use string with ISO 8601
     #[serde(deserialize_with = "tags_deserialize")]
     pub tags: BTreeSet<String>,
-    // ? update_time
-    // ? description: String, use for youtube timestamp
+    // pub description: String,
+    // ? pub update_time: u64,
 }
 
 fn tags_deserialize<'de, D>(deserializer: D) -> Result<BTreeSet<String>, D::Error>

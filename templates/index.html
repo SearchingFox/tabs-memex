@@ -20,9 +20,11 @@
         </div>
     </article>
     {% endfor %}
-    {% for i in range(end=pages) %}
-        <a href="/all?p={{i}}">{{i}}</a>
-    {% endfor %}
+    <div class="pages">
+        {% for i in range(end=pages) %}
+            <a href="/all?p={{i}}">{{i}}</a>
+        {% endfor %}
+    </div>
 {% endblock main %}
 {% block rightbar %}
     <details>

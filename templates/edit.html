@@ -4,13 +4,13 @@
     <article>
         <form action="/edit-bookmark/{{ id }}" method="POST">
             <label for="bookmark-name">Name</label>
-            <input required type="text" name="bookmark-name" value="{{ name }}" autocomplete="off">
+            <input id="bookmark-name" class="edit-bookmark" required type="text" name="name" value="{{ name }}" autocomplete="off">
 
             <label for="bookmark-url">URL</label>
-            <input required type="text" name="bookmark-url" value="{{ url }}" autocomplete="off">
+            <input id="bookmark-url" class="edit-bookmark" required type="text" name="url" value="{{ url }}" autocomplete="off">
 
             <label for="bookmark-tags">Tags space-separated</label>
-            <input type="text" id="bookmark-tags" name="tags"
+            <input id="bookmark-tags" class="edit-bookmark" type="text"  name="tags"
                 value="{{ tags | join(sep=" ") }}" placeholder="video programming" autocomplete="on">
 
             <button class="btn" type="submit">Save</button>
