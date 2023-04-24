@@ -20,18 +20,21 @@
         </header>
         <main>
             <article>
-                <form class="edit-bookmark" action="/edit-bookmark/<%= id %>" method="POST">
+                <form class="edit-bookmark-form" action="/edit-bookmark/<%= id %>" method="POST">
                     <label for="bookmark-name">Name</label>
                     <input id="bookmark-name" class="edit-bookmark" required type="text" name="name" value="<%= name %>" autocomplete="off">
 
                     <label for="bookmark-url">URL</label>
                     <input id="bookmark-url" class="edit-bookmark" required type="text" name="url" value="<%= url %>" autocomplete="off">
 
-                    <label for="bookmark-tags">Tags space-separated</label>
+                    <label for="bookmark-description">Description</label>
+                    <textarea id="bookmark-description" class="edit-bookmark" name="description", placeholder="Enter bookmark description"><%= description %></textarea>
+
+                    <label for="bookmark-tags">Tags (space-separated)</label>
                     <input id="bookmark-tags" class="edit-bookmark" type="text"  name="tags"
                         value="<%= tags.iter().cloned().collect::<Vec<_>>().join(" ") %>" placeholder="video programming" autocomplete="on">
 
-                    <button class="btn" type="submit">Save</button>
+                    <button class="btn">Save</button>
                 </form>
             </article>
         </main>

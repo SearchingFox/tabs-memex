@@ -66,6 +66,7 @@ async fn update_bookmark_form(id: Path<u64>, form: Form<Bookmark>) -> Result<imp
         name: form.name.clone(),
         url: form.url.clone(),
         creation_time: 0,
+        description: form.description.clone(),
         tags: form.tags.clone(),
     })
     .map_err(ErrorInternalServerError)?;
@@ -115,7 +116,7 @@ async fn tags_page() -> Result<HttpResponse> {
 async fn tag_page(name: Path<String>) -> Result<HttpResponse> {
     let found =
         database::get_bookmarks_by_tag(name.into_inner()).map_err(ErrorInternalServerError)?;
-    let len = found.len() as u64;
+    let len = found.len() as i32;
 
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
@@ -132,7 +133,7 @@ async fn tag_page(name: Path<String>) -> Result<HttpResponse> {
 }
 
 #[get("/all")]
-async fn page(page: Query<HashMap<String, u64>>) -> Result<HttpResponse> {
+async fn page(page: Query<HashMap<String, i32>>) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(
@@ -140,7 +141,7 @@ async fn page(page: Query<HashMap<String, u64>>) -> Result<HttpResponse> {
                 bookmarks: database::list_all(page.get("p").cloned().unwrap_or_default())
                     .map_err(ErrorInternalServerError)?,
                 number: database::count_all().unwrap_or(0),
-                pg: page.get("p").cloned().unwrap_or_default() as i32,
+                pg: page.get("p").cloned().unwrap_or_default(),
                 pages: (database::count_all().map_err(ErrorInternalServerError)? / 100 + 1) as i32,
             }
             .render_once()
@@ -157,7 +158,7 @@ async fn search(q: Query<HashMap<String, String>>) -> Result<HttpResponse> {
         Some((k, v)) if k == "q" => database::search(v).map_err(ErrorInternalServerError)?,
         _ => Vec::new(),
     };
-    let len = found.len() as u64;
+    let len = found.len() as i32;
 
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")

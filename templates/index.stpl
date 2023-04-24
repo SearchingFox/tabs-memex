@@ -27,6 +27,9 @@
                         <a class="edit-bookmark-btn emoji" href="/edit-bookmark/<%= bookmark.id %>">✏️</a>
                         <a class="delete-bookmark-btn emoji" href="/delete-bookmark/<%= bookmark.id %>">🗑️</a>
                     </div>
+                    <% if !bookmark.description.is_empty() { %>
+                        <div class="description"> <%- bookmark.description %> </div>
+                    <% } %>
                     <div class="about-bookmark">
                         <div>
                             <% for tag in bookmark.tags { %>
@@ -38,20 +41,20 @@
                     </div>
                 </article>
             <% } %>
-            <% if pages > 0 { %>
-            <div class="pages">
-                <% for i in 0.max(pg-5)..pages.min(pg+6) { %>
-                    <a href="/all?p=<%=i%>"><%=i%></a>
-                <% } %>
-                <% if pages > 5 && pg < pages - 6 { %><span>...</span><% } %>
-                <form action="/all" id="page-selection">
-                    <select name="p" form="page-selection" onchange="this.form.submit();">
-                        <% for i in 0..pages { %>
-                            <option value="<%= i %>" <%= if pg == i { "selected" } else { "" } %> > <%= i %> </option>
-                        <% } %>
-                    </select>
-                </form>
-            </div>
+            <% if pages > 1 { %>
+                <div class="pages">
+                    <% for i in 0.max(pg-5)..pages.min(pg+6) { %>
+                        <a href="/all?p=<%=i%>"><%=i%></a>
+                    <% } %>
+                    <% if pages > 5 && pg < pages - 6 { %><span>...</span><% } %>
+                    <form action="/all" id="page-selection">
+                        <select name="p" form="page-selection" onchange="this.form.submit();">
+                            <% for i in 0..pages { %>
+                                <option value="<%= i %>" <%= if pg == i { "selected" } else { "" } %> > <%= i %> </option>
+                            <% } %>
+                        </select>
+                    </form>
+                </div>
             <% } %>
         </main>
         <div class="right-bar">
@@ -59,13 +62,13 @@
                 <summary>Add bookmarks</summary>
                 <summary>Add bookmarks from file</summary>
                 <form method="POST" enctype="multipart/form-data">
-                    <input type="file" id="file" name="file" multiple />
-                    <button class="btn" type="submit">Save</button>
+                    <input type="file" name="file" multiple />
+                    <button class="btn">Save</button>
                 </form>
                 <summary>Add bookmarks from clipboard</summary>
                 <form method="POST" action="/add-urls">
                     <textarea name="urls"></textarea>
-                    <button class="btn" type="submit">Save</button>
+                    <button class="btn">Save</button>
                 </form>
             </details>
             <form action="/search">

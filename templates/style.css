@@ -5,14 +5,14 @@
 }
 
 :root {
-  --light-bg-color: rgb(232, 240, 246);
+  --light-bg-color: rgb(232, 240, 246); /* #e8e9ec; */
   --light-article-bg-color: white;
-  --light-font-color: black;
-  --dark-bg-color: #232325;
+  --light-font-color: black; /* #494f6d; #7c86b9; */
+  --dark-bg-color: #232325; /* #161821 */
   --dark-article-bg-color: #2a2b2d;
   --dark-font-color: white;
   --second-font-color: gray;
-  --url-color: cornflowerblue;
+  --url-color: #2d53a0; /* cornflowerblue; */
 }
 
 @media screen and (max-width: 40rem) {
@@ -55,8 +55,9 @@
     grid-template-areas: "header main footer";
 
     background: var(--light-bg-color);
+    color: var(--light-font-color);
     --article-bg-color: var(--light-article-bg-color);
-    --font-color: var(--light-font-color);
+    /* --font-color: var(--light-font-color); */
   }
 
   h1 {
@@ -65,9 +66,9 @@
 }
 .dark-mode {
   background: var(--dark-bg-color);
-  /* color: var(--dark-font-color); */
+  color: var(--dark-font-color);
   --article-bg-color: var(--dark-article-bg-color);
-  --font-color: var(--dark-font-color);
+  /* --font-color: var(--dark-font-color); */
 }
 main {
   grid-area: main;
@@ -157,6 +158,14 @@ h3 {
   color: #ffafcc;
 }
 
+.description {
+  margin: 8px 10px;
+  text-align: justify;
+
+  border: 1px solid #999;
+  padding: 5px;
+}
+
 .about-bookmark {
   display: flex;
   font-size: small;
@@ -189,24 +198,18 @@ h3 {
 }
 
 /* Form */
-.edit-bookmark {
-  max-width: 40rem;
-  margin: auto;
-}
-form input[type="submit"] {
-  min-width: 50%;
-  max-width: 15rem;
-  margin-top: 8px;
-}
 form textarea {
   width: 100%;
   height: 200px;
-  /* padding: 1px; */
   resize: vertical;
 }
 
 /* Edit page */
-input.edit-bookmark {
+.edit-bookmark-form {
+  max-width: 40rem;
+  margin: auto;
+}
+.edit-bookmark {
   width: 100%;
   margin: 10px auto;
 }

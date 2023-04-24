@@ -12,9 +12,9 @@ pub struct Bookmark {
     pub url: String,
     #[serde(skip_deserializing)]
     pub creation_time: i64, // maybe use string with ISO 8601
+    pub description: String,
     #[serde(deserialize_with = "tags_deserialize")]
     pub tags: BTreeSet<String>,
-    // pub description: String,
     // ? pub update_time: u64,
 }
 
@@ -45,7 +45,7 @@ pub struct Tags {
 #[template(path = "index.stpl")]
 pub struct Index {
     pub bookmarks: Vec<Bookmark>,
-    pub number: u64,
+    pub number: i32,
     pub pg: i32,
     pub pages: i32,
 }
