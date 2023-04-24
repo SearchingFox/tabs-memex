@@ -5,13 +5,14 @@
 }
 
 :root {
-  --light-bg-color: rgb(234, 241, 244);
+  --light-bg-color: rgb(232, 240, 246);
   --light-article-bg-color: white;
   --light-font-color: black;
   --dark-bg-color: #232325;
   --dark-article-bg-color: #2a2b2d;
   --dark-font-color: white;
   --second-font-color: gray;
+  --url-color: cornflowerblue;
 }
 
 @media screen and (max-width: 40rem) {
@@ -57,10 +58,14 @@
     --article-bg-color: var(--light-article-bg-color);
     --font-color: var(--light-font-color);
   }
+
+  h1 {
+    margin: 0px 4px 10px 0px;
+  }
 }
 .dark-mode {
   background: var(--dark-bg-color);
-  color: var(--dark-font-color);
+  /* color: var(--dark-font-color); */
   --article-bg-color: var(--dark-article-bg-color);
   --font-color: var(--dark-font-color);
 }
@@ -77,6 +82,7 @@ footer {
 /* Header */
 header {
   padding: 0 4px;
+  margin-top: 5px;
 }
 header ul {
   padding: 0;
@@ -95,7 +101,7 @@ header a:visited {
 
 nav {
   position: sticky;
-  top: 10px;
+  top: 15px;
 }
 
 form.search {
@@ -119,74 +125,36 @@ form.search a:visited {
   font-size: medium;
 }
 
-.pages {
-  display: flex;
-  gap: 4px;
-  margin-top: 4px;
-  justify-content: center;
-}
-
-.pages > a:link,
-.pages > a:visited {
-  color: black;
-}
-
-.right-bar {
-  margin-left: 6px;
-}
-
-/* Article */
-/* main > article:first-of-type {
-  margin-top: 0;
-} */
+/* Main */
 main > article {
   margin: 5px 25px;
   padding: 10px;
   border-radius: 4px;
   background: var(--article-bg-color);
-  font-family: Iosevka, sans-serif;
-}
-/* article + article {
-  margin-top: 10px;
-} */
-article p:last-of-type:not(.h-entry p) {
-  margin-bottom: 0;
+  font-family: Iosevka Slab, sans-serif;
 }
 article a:link {
   text-decoration: none;
 }
 
-article label {
-  margin-top: 10px;
+.bookmark {
+  display: flex;
 }
-/* article input {
-  width: 100%;
-} */
-
+.bookmark > h3 > a {
+  color: var(--url-color);
+}
 h3 {
   margin: 0px 10px 0px 0px;
   font-size: medium;
   text-align: justify;
 }
 
-.edit-bookmark-btn,
-.edit-bookmark-btn:visited {
+.edit-bookmark-btn {
   margin-left: auto;
-  color: #a2d2ff;
-  /* 77b9ff; */
+  color: #a2d2ff; /* 77b9ff; */
 }
-a.delete-bookmark-btn {
+.delete-bookmark-btn {
   color: #ffafcc;
-}
-a.edit-bookmark-btn:link,
-a.delete-bookmark-btn:link {
-  text-decoration: none;
-}
-.bookmark {
-  display: flex;
-}
-.u-url {
-  color: cornflowerblue;
 }
 
 .about-bookmark {
@@ -196,35 +164,34 @@ a.delete-bookmark-btn:link {
   margin-top: 5px;
   color: var(--second-font-color);
 }
+.about-bookmark a {
+  color: var(--second-font-color);
+}
 .about-bookmark time {
   margin-left: auto;
 }
-.about-bookmark a {
-  color: var(--second-font-color);
-  margin-right: 5px;
+
+.pages {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin: 10px auto;
 }
-.about-bookmark a:link {
+.pages a:link,
+.pages a:visited {
+  color: var(--font-color);
   text-decoration: none;
 }
-.tags {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  padding: 0;
-  margin: 4px 0;
+
+/* Right bar */
+.choose-date {
+  margin-top: 8px;
 }
 
 /* Form */
-form {
+.edit-bookmark {
   max-width: 40rem;
   margin: auto;
-}
-form > input + label {
-  margin-top: 16px;
-}
-form label {
-  display: block;
-  margin-bottom: 8px;
 }
 form input[type="submit"] {
   min-width: 50%;
@@ -234,13 +201,14 @@ form input[type="submit"] {
 form textarea {
   width: 100%;
   height: 200px;
-  padding: 1px;
+  /* padding: 1px; */
   resize: vertical;
 }
 
 /* Edit page */
 input.edit-bookmark {
   width: 100%;
+  margin: 10px auto;
 }
 
 /* Tags page */
@@ -258,12 +226,10 @@ article .tags-list {
   text-decoration-line: none;
 }
 
-/* h2 {
-  margin: 0;
-  font-size: 1.5rem;
-} */
-
 .btn {
+  display: block;
+  margin-top: 4px;
+
   padding: 0.1rem 0.75rem;
   font-size: 0.9rem;
   transition: background 0.1s linear;
@@ -271,7 +237,4 @@ article .tags-list {
   background: #0062cc;
   border: #001933 1px solid;
   color: white;
-
-  display: block;
-  margin-top: 10px;
 }

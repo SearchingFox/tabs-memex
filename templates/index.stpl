@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+    <% include!("head.stpl"); %>
+    <body>
+        <header>
+            <nav>
+                <h1>Bookmarks <%= number %></h1>
+                <form class="search" action="/search">
+                    <input type="search" id="search" name="q" placeholder="Search..." />
+                    <p>
+                        <a class="emoji" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">❔</a>
+                    </p>
+                </form>
+                <ul>
+                    <li> <a href="/all">All</a> </li>
+                    <li> <a href="/tags">Tags</a> </li>
+                    <li> <a href="/about">About</a> </li>
+                </ul>
+            </nav>
+        </header>
+        <main>
+            <% for bookmark in bookmarks { %>
+                <article>
+                    <div class="bookmark">
+                        <h3><a href="<%- bookmark.url %>"><%- bookmark.name %></a></h3>
+
+                        <a class="edit-bookmark-btn emoji" href="/edit-bookmark/<%= bookmark.id %>">✏️</a>
+                        <a class="delete-bookmark-btn emoji" href="/delete-bookmark/<%= bookmark.id %>">🗑️</a>
+                    </div>
+                    <div class="about-bookmark">
+                        <div>
+                            <% for tag in bookmark.tags { %>
+                                <a href="/tags/<%= tag %>">#<%= tag %></a>
+                            <% } %>
+                        </div>
+                        <% use chrono::{NaiveDateTime, prelude::Local, TimeZone}; %>
+                        <time><%= Local.from_utc_datetime(&NaiveDateTime::from_timestamp_opt(bookmark.creation_time, 0).unwrap()).format("%Y-%m-%d %H:%M").to_string() %></time>
+                    </div>
+                </article>
+            <% } %>
+            <% if pages > 0 { %>
+            <div class="pages">
+                <% for i in 0.max(pg-5)..pages.min(pg+6) { %>
+                    <a href="/all?p=<%=i%>"><%=i%></a>
+                <% } %>
+                <% if pages > 5 && pg < pages - 6 { %><span>...</span><% } %>
+                <form action="/all" id="page-selection">
+                    <select name="p" form="page-selection" onchange="this.form.submit();">
+                        <% for i in 0..pages { %>
+                            <option value="<%= i %>" <%= if pg == i { "selected" } else { "" } %> > <%= i %> </option>
+                        <% } %>
+                    </select>
+                </form>
+            </div>
+            <% } %>
+        </main>
+        <div class="right-bar">
+            <details>
+                <summary>Add bookmarks</summary>
+                <summary>Add bookmarks from file</summary>
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="file" id="file" name="file" multiple />
+                    <button class="btn" type="submit">Save</button>
+                </form>
+                <summary>Add bookmarks from clipboard</summary>
+                <form method="POST" action="/add-urls">
+                    <textarea name="urls"></textarea>
+                    <button class="btn" type="submit">Save</button>
+                </form>
+            </details>
+            <form action="/search">
+                <input type="date" class="choose-date" name="d" onchange="this.form.submit();">
+            </form>
+        </div>
+    </body>
+</html>

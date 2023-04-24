@@ -1,15 +1,17 @@
+use sailfish::TemplateOnce;
 use serde::{Deserialize, Deserializer, Serialize};
 
 use std::collections::BTreeSet;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, TemplateOnce)]
+#[template(path = "edit.stpl")]
 pub struct Bookmark {
     #[serde(skip_deserializing)]
     pub id: u64,
     pub name: String,
     pub url: String,
     #[serde(skip_deserializing)]
-    pub creation_time: u64, // maybe use string with ISO 8601
+    pub creation_time: i64, // maybe use string with ISO 8601
     #[serde(deserialize_with = "tags_deserialize")]
     pub tags: BTreeSet<String>,
     // pub description: String,
@@ -31,4 +33,19 @@ where
 pub struct Tag {
     pub tag_name: String,
     pub bookmarks_count: u64,
+}
+
+#[derive(TemplateOnce)]
+#[template(path = "tags.stpl")]
+pub struct Tags {
+    pub tags: Vec<Tag>,
+}
+
+#[derive(TemplateOnce)]
+#[template(path = "index.stpl")]
+pub struct Index {
+    pub bookmarks: Vec<Bookmark>,
+    pub number: u64,
+    pub pg: i32,
+    pub pages: i32,
 }

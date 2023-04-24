@@ -1,17 +1,9 @@
 #![feature(iter_array_chunks)]
-#![feature(file_create_new)]
-
-#[macro_use]
-extern crate tera;
-#[macro_use]
-extern crate lazy_static;
-extern crate serde_json;
 
 use actix_web::{web, App, HttpServer};
 
 mod database;
 mod handlers;
-mod templates;
 mod types;
 
 #[actix_web::main]

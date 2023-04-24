@@ -1,10 +1,7 @@
+use chrono::Utc;
 use rusqlite::{named_params, params, Connection, Result};
 
-use std::{
-    collections::BTreeSet,
-    path::Path,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::{collections::BTreeSet, path::Path};
 
 use crate::types::{Bookmark, Tag};
 
@@ -22,7 +19,7 @@ pub fn init() -> Result<()> {
                 creation_time  INTEGER NOT NULL
             );
             CREATE TABLE IF NOT EXISTS tags (
-                tag_name       TEXT NOT NULL,
+                tag_name       TEXT NOT NULL CHECK (url <> ''),
                 bookmark_id    INTEGER NOT NULL,
                 UNIQUE (tag_name, bookmark_id) ON CONFLICT IGNORE
             );
@@ -76,16 +73,13 @@ pub fn update_bookmark(b: Bookmark) -> Result<()> {
         },
     )?;
 
-    for tag in tags_for_bookmark(b.id)?.difference(&b.tags) {
-        conn.execute(
-            "DELETE FROM tags WHERE tag_name = ?1 AND bookmark_id = ?2",
-            params![tag, b.id],
-        )?;
-    }
+    conn.execute("DELETE FROM tags WHERE bookmark_id = ?", params![b.id])?;
 
-    for new_tag in b.tags.difference(&tags_for_bookmark(b.id)?) {
-        if !new_tag.is_empty() {
-            conn.execute("INSERT INTO tags VALUES (?1, ?2)", params![new_tag, b.id])?;
+    if !b.tags.is_empty() {
+        for tag in b.tags {
+            if !tag.is_empty() {
+                conn.execute("INSERT INTO tags VALUES (?1, ?2)", params![tag, b.id])?;
+            }
         }
     }
 
@@ -267,13 +261,6 @@ pub fn count_all() -> Result<u64> {
     conn.query_row_and_then("SELECT count() FROM bookmarks", [], |row| row.get(0))
 }
 
-pub fn exists(url: String) -> Result<bool> {
-    let conn = Connection::open(FILE_PATH)?;
-    let mut stmt = conn.prepare("SELECT 1 FROM bookmarks WHERE url = ?")?;
-
-    stmt.exists(params![url])
-}
-
 pub fn insert_from_lines(input: String) -> Result<()> {
     insert(
         input
@@ -283,10 +270,7 @@ pub fn insert_from_lines(input: String) -> Result<()> {
                 id: 0,
                 name: x[0].to_string(),
                 url: x[1].to_string(),
-                creation_time: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Time went backwards")
-                    .as_secs(),
+                creation_time: Utc::now().timestamp(),
                 tags: BTreeSet::new(),
             })
             .collect(),
