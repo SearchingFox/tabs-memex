@@ -1,4 +1,3 @@
-use chrono::Utc;
 use rusqlite::{named_params, params, Connection, Result};
 
 use std::{collections::BTreeSet, path::Path};
@@ -37,7 +36,7 @@ pub fn init() -> Result<()> {
                 INSERT INTO bookmarks_fts(bookmarks_fts, rowid, name, url, creation_time, description) VALUES('delete', old.id, old.name, old.url, old.creation_time, old.description);
                 INSERT INTO bookmarks_fts(rowid, name, url, creation_time, description) VALUES (new.id, new.name, new.url, new.creation_time, new.description);
             END;")?;
-    };
+    }
 
     Ok(())
 }
@@ -48,11 +47,10 @@ pub fn insert(bookmarks: Vec<Bookmark>) -> Result<()> {
 
     for b in bookmarks {
         if let Err(err) = tx.execute(
-            "INSERT INTO bookmarks (name, url, creation_time, description) VALUES (?1, ?2, ?3, '')",
+            "INSERT INTO bookmarks (name, url, creation_time, description) VALUES (?1, ?2, unixepoch(), '')",
             params![
                 b.name.replace('<', "&lt").replace('>', "&gt"),
                 b.url,
-                b.creation_time
             ],
         ) {
             println!("{}: {}", err, b.url)
@@ -175,7 +173,9 @@ pub fn get_bookmarks_by_tag(tag_name: String) -> Result<Vec<Bookmark>> {
     let conn = Connection::open(FILE_PATH)?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, name, url, creation_time, description FROM bookmarks JOIN tags ON id = bookmark_id WHERE tag_name = ?",
+        "SELECT id, name, url, creation_time, description
+        FROM bookmarks JOIN tags ON id = bookmark_id WHERE tag_name = ?
+        ORDER BY creation_time DESC",
     )?;
     let res = stmt
         .query_map(params![tag_name], |row| {
@@ -219,6 +219,38 @@ pub fn get_bookmarks_by_date(date: &String) -> Result<Vec<Bookmark>> {
 
 pub fn search(query: &String) -> Result<Vec<Bookmark>> {
     let conn = Connection::open(FILE_PATH)?;
+
+    if query.starts_with("tags:") {
+        let mut stmt = conn.prepare(
+            format!(
+                "SELECT id, name, url, creation_time, description FROM bookmarks WHERE id IN (
+                {}
+                ) ORDER BY creation_time DESC",
+                query
+                    .split(' ')
+                    .skip(1)
+                    .map(|s| format!("SELECT bookmark_id FROM tags WHERE tag_name = '{}'", s))
+                    .collect::<Vec<String>>()
+                    .join(" INTERSECT ")
+            )
+            .as_str(),
+        )?;
+
+        let res = stmt
+            .query_map(params![], |row| {
+                Ok(Bookmark {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    url: row.get(2)?,
+                    creation_time: row.get(3)?,
+                    description: row.get(4)?,
+                    tags: tags_for_bookmark(row.get(0)?)?,
+                })
+            })?
+            .collect::<Result<Vec<Bookmark>>>();
+
+        return res;
+    }
 
     let mut stmt = conn.prepare(
         "SELECT rowid, highlight(bookmarks_fts, 0, '<mark>', '</mark>') name, url, creation_time, highlight(bookmarks_fts, 3, '<mark>', '</mark>') description
@@ -281,7 +313,7 @@ pub fn insert_from_lines(input: String) -> Result<()> {
                 id: 0,
                 name: x[0].to_string(),
                 url: x[1].to_string(),
-                creation_time: Utc::now().timestamp(),
+                creation_time: 0,
                 description: "".to_string(),
                 tags: BTreeSet::new(),
             })
