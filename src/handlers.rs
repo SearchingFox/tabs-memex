@@ -75,7 +75,12 @@ async fn update_bookmark_form(id: Path<u64>, form: Form<Bookmark>) -> Result<imp
 }
 
 #[get("/edit-bookmark/{id:\\d+}")]
-async fn edit_page(id: Path<u64>) -> Result<HttpResponse> {
+async fn edit_page(req: HttpRequest, id: Path<u64>) -> Result<HttpResponse> {
+    // req.headers()
+    //         .get(REFERER)
+    //         .map_or(Ok("/all"), |x| x.to_str())
+    //         .map(String::from)
+    //         .map_err(ErrorInternalServerError)?,
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(
@@ -132,6 +137,26 @@ async fn tag_page(name: Path<String>) -> Result<HttpResponse> {
         ))
 }
 
+#[get("/")]
+async fn index() -> Result<HttpResponse> {
+    let found =
+        database::get_bookmarks_by_tag("imp".to_string()).map_err(ErrorInternalServerError)?;
+    let len = found.len() as i32;
+
+    Ok(HttpResponse::Ok()
+        .content_type("text/html; charset=utf-8")
+        .body(
+            Index {
+                bookmarks: found,
+                number: len,
+                pg: 0,
+                pages: 0,
+            }
+            .render_once()
+            .map_err(ErrorInternalServerError)?,
+        ))
+}
+
 #[get("/all")]
 async fn page(page: Query<HashMap<String, i32>>) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok()
@@ -142,7 +167,7 @@ async fn page(page: Query<HashMap<String, i32>>) -> Result<HttpResponse> {
                     .map_err(ErrorInternalServerError)?,
                 number: database::count_all().unwrap_or(0),
                 pg: page.get("p").cloned().unwrap_or_default(),
-                pages: (database::count_all().map_err(ErrorInternalServerError)? / 100 + 1) as i32,
+                pages: database::count_all().map_err(ErrorInternalServerError)? / 100 + 1,
             }
             .render_once()
             .map_err(ErrorInternalServerError)?,

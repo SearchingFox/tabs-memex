@@ -14,6 +14,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             // .wrap(NormalizePath::trim())
             .app_data(web::FormConfig::default().limit(128 * 1024))
+            .service(handlers::index)
             .service(handlers::page)
             .service(handlers::tag_page)
             .service(handlers::tags_page)

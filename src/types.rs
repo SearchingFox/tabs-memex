@@ -33,6 +33,7 @@ where
 pub struct Tag {
     pub tag_name: String,
     pub bookmarks_count: u64,
+    // ? is_favorite: bool,
 }
 
 #[derive(TemplateOnce)]
