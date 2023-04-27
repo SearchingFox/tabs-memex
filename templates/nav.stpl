@@ -1,0 +1,14 @@
+<form class="search" action="/search">
+    <input type="search" id="search" name="q" placeholder="Search..." />
+    <p>
+        <a class="emoji" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">❔</a>
+    </p>
+</form>
+<ul>
+    <li> <a href="/all">All</a> </li>
+    <li> <a href="/tags">Tags</a> </li>
+    <ul class="favorite-tags">
+        <li> <a href="/tags/imp">Imp</a> </li>
+        <li> <a href="/tags/todo">TODO</a> </li>
+    </ul>
+</ul>

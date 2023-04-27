@@ -5,25 +5,15 @@
         <header>
             <nav>
                 <h1>Tags <%= tags.len() %></h1>
-                <form class="search" action="/search">
-                    <input type="search" id="search" name="q" placeholder="Search..." />
-                    <p>
-                        <a class="emoji" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">❔</a>
-                    </p>
-                </form>
-                <ul>
-                    <li> <a href="/all">All</a> </li>
-                    <li> <a href="/tags">Tags</a> </li>
-                    <li> <a href="/about">About</a> </li>
-                </ul>
+                <% include!("nav.stpl"); %>
             </nav>
         </header>
         <main>
             <article>
                 <div class="tags-list">
                 <% for tag in tags { %>
-                    <h3><a href="/tags/<%= tag.tag_name %>"><%= tag.tag_name %></a></h3>
-                    <span><%= tag.bookmarks_count %></span>
+                        <h3><a href="/tags/<%= tag.tag_name %>"><%= tag.tag_name %></a></h3>
+                        <span><%= tag.bookmarks_count %></span>
                 <% } %>
                 </div>
             </article>

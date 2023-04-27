@@ -98,6 +98,7 @@ header a,
 header a:hover,
 header a:visited {
   color: var(--font-color);
+  text-decoration: none;
 }
 
 nav {
@@ -119,6 +120,10 @@ form.search p {
 form.search a:link,
 form.search a:visited {
   text-decoration: none;
+}
+
+.favorite-tags {
+  padding-left: 8px;
 }
 
 .emoji {
@@ -150,13 +155,22 @@ h3 {
   text-align: justify;
 }
 
-.edit-bookmark-btn {
+/* .bookmark a:link,
+.bookmark a:visited {
+  color: var(--url-color);
+} */
+
+.bookmark > a:first-of-type {
   margin-left: auto;
-  color: #a2d2ff; /* 77b9ff; */
+}
+
+/* .edit-bookmark-btn {
+  margin-left: auto;
+  color: #a2d2ff; 77b9ff; 
 }
 .delete-bookmark-btn {
   color: #ffafcc;
-}
+} */
 
 .description {
   margin: 8px 10px;
@@ -225,8 +239,8 @@ article .tags-list {
 }
 .tags-list a:link,
 .tags-list a:visited {
-  color: cornflowerblue;
-  text-decoration-line: none;
+  color: var(--url-color);
+  text-decoration: none;
 }
 
 .btn {
@@ -237,7 +251,7 @@ article .tags-list {
   font-size: 0.9rem;
   transition: background 0.1s linear;
 
-  background: #0062cc;
+  background: var(--url-color); /* #0062cc; */
   border: #001933 1px solid;
   color: white;
 }

@@ -5,17 +5,7 @@
         <header>
             <nav>
                 <h1>BookmarkID <%= id %> </h1>
-                <form class="search" action="/search">
-                    <input type="search" id="search" name="q" placeholder="Search..." />
-                    <p>
-                        <a class="emoji" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">❔</a>
-                    </p>
-                </form>
-                <ul>
-                    <li> <a href="/all">All</a> </li>
-                    <li> <a href="/tags">Tags</a> </li>
-                    <li> <a href="/about">About</a> </li>
-                </ul>
+                <% include!("nav.stpl"); %>
             </nav>
         </header>
         <main>
