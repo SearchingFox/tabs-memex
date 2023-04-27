@@ -4,18 +4,8 @@
     <body>
         <header>
             <nav>
-                <h1>Bookmarks <%= number %></h1>
-                <form class="search" action="/search">
-                    <input type="search" id="search" name="q" placeholder="Search..." />
-                    <p>
-                        <a class="emoji" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">❔</a>
-                    </p>
-                </form>
-                <ul>
-                    <li> <a href="/all">All</a> </li>
-                    <li> <a href="/tags">Tags</a> </li>
-                    <li> <a href="/about">About</a> </li>
-                </ul>
+                <h1><a href="/">Bookmarks <%= number %></a></h1>
+                <% include!("nav.stpl"); %>
             </nav>
         </header>
         <main>
@@ -36,21 +26,22 @@
                                 <a href="/tags/<%= tag %>">#<%= tag %></a>
                             <% } %>
                         </div>
-                        <% use chrono::{NaiveDateTime, prelude::Local, TimeZone}; %>
-                        <time><%= Local.from_utc_datetime(&NaiveDateTime::from_timestamp_opt(bookmark.creation_time, 0).unwrap()).format("%Y-%m-%d %H:%M").to_string() %></time>
+
+                        <% use time::{OffsetDateTime, macros::format_description, UtcOffset}; %>
+                        <time><%= OffsetDateTime::from_unix_timestamp(bookmark.creation_time).unwrap().to_offset(UtcOffset::current_local_offset().unwrap()).format(format_description!("[year]-[month]-[day] [hour]:[minute]")).unwrap().to_string() %></time>
                     </div>
                 </article>
             <% } %>
             <% if pages > 1 { %>
                 <div class="pages">
                     <% for i in 0.max(pg-5)..pages.min(pg+6) { %>
-                        <a href="/all?p=<%=i%>"><%=i%></a>
+                        <a href="/all?p=<%= i %>"><%= i+1 %></a>
                     <% } %>
                     <% if pages > 5 && pg < pages - 6 { %><span>...</span><% } %>
                     <form action="/all" id="page-selection">
                         <select name="p" form="page-selection" onchange="this.form.submit();">
                             <% for i in 0..pages { %>
-                                <option value="<%= i %>" <%= if pg == i { "selected" } else { "" } %> > <%= i %> </option>
+                                <option value="<%= i %>" <%= if pg == i { "selected" } else { "" } %> > <%= i+1 %> </option>
                             <% } %>
                         </select>
                     </form>
@@ -65,9 +56,9 @@
                     <input type="file" name="file" multiple />
                     <button class="btn">Save</button>
                 </form>
-                <summary>Add bookmarks from clipboard</summary>
+                <hr>
                 <form method="POST" action="/add-urls">
-                    <textarea name="urls"></textarea>
+                    <textarea name="urls" placeholder="Insert bookmarks in format:&#10;name &#10;url"></textarea>
                     <button class="btn">Save</button>
                 </form>
             </details>
