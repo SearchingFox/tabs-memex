@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html>
     <% include!("head.stpl"); %>
+    <script>
+    function renameTag(tag_name) {
+        var form = `<form action="/rename-tag/${tag_name}" method="POST">
+                     <input type="text" value="${tag_name}" name="new">
+                     <input type="submit" hidden>
+                   </form>`
+
+        document.getElementById(tag_name).outerHTML = form;
+    }
+    </script>
     <body>
         <header>
             <nav>
@@ -9,13 +19,17 @@
             </nav>
         </header>
         <main>
-            <article>
-                <div class="tags-list">
-                <% for tag in tags { %>
-                        <h3><a href="/tags/<%= tag.tag_name %>"><%= tag.tag_name %></a></h3>
-                        <span><%= tag.bookmarks_count %></span>
-                <% } %>
-                </div>
+            <article class="tags-list">
+                    <% for tag in tags { %>
+                    <%# <div class="tags-list-element"> %>
+                            <h4 id="<%= tag.tag_name %>"><a href="/tags/<%= tag.tag_name %>"><%= tag.tag_name %></a></h4>
+                            <span><%= tag.bookmarks_count %></span>
+                            <div class="tag-edit-buttons">
+                                <button type="button" onclick="renameTag('<%= tag.tag_name %>')">&#x270F;</button>
+                                <a href="/delete-tag/<%= tag.tag_name %>">&#x1F5D1;</a>
+                            </div>
+                    <%# </div> %>
+                    <% } %>
             </article>
         </main>
     </body>

@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 #[template(path = "edit.stpl")]
 pub struct Bookmark {
     #[serde(skip_deserializing)]
-    pub id: u64,
+    pub id: i64,
     pub name: String,
     pub url: String,
     #[serde(skip_deserializing)]
@@ -25,7 +25,7 @@ where
     let str_sequence = String::deserialize(deserializer)?;
     Ok(str_sequence
         .split(' ')
-        .map(|item| item.to_string())
+        .filter_map(|item| (!item.is_empty()).then_some(item.to_string()))
         .collect())
 }
 
@@ -33,7 +33,8 @@ where
 pub struct Tag {
     pub tag_name: String,
     pub bookmarks_count: u64,
-    // ? is_favorite: bool,
+    // ? pub is_favorite: bool,
+    // ? pub color: String
 }
 
 #[derive(TemplateOnce)]
@@ -46,7 +47,7 @@ pub struct Tags {
 #[template(path = "index.stpl")]
 pub struct Index {
     pub bookmarks: Vec<Bookmark>,
-    pub number: i32,
-    pub pg: i32,
-    pub pages: i32,
+    pub number: usize,
+    pub pg: usize,
+    pub pages: usize,
 }

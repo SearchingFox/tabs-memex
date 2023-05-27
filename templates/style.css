@@ -5,15 +5,27 @@
 }
 
 :root {
-  --light-bg-color: rgb(232, 240, 246); /* #e8e9ec; */
-  --light-article-bg-color: white;
+  --light-bg-color: white;
+  /* #c8cfdd; */
+  /* rgb(232, 240, 246);  */
+  /* #e8e9ec; */
+  /* c8cfdd */
+  /* --light-bg-color: #a7bf8d; */
+  /* rgb(230, 247, 225); */
+  --light-article-bg-color: white; /* #e8e9ec; */
   --light-font-color: black; /* #494f6d; #7c86b9; */
   --dark-bg-color: #232325; /* #161821 */
   --dark-article-bg-color: #2a2b2d;
   --dark-font-color: white;
-  --second-font-color: gray;
-  --url-color: #2d53a0; /* cornflowerblue; */
+  --second-font-color: #ccd;
+  --hr-color: #ccd;
+  --url-color: #2d53a0; /* #2d53a0; #415f19; #708e34; */
 }
+/* .fullwhite-theme {} */
+/* .light-theme {} */
+/* .dark-theme {} */
+/* .iceberg-theme {} */
+/* .green-theme {} */
 
 @media screen and (max-width: 40rem) {
   body {
@@ -47,7 +59,6 @@
 
 @media screen and (min-width: 40rem) {
   body {
-    font-family: sans-serif;
     word-break: break-word;
 
     display: grid;
@@ -58,6 +69,8 @@
     color: var(--light-font-color);
     --article-bg-color: var(--light-article-bg-color);
     /* --font-color: var(--light-font-color); */
+
+    font-family: Iosevka Aile, Iosevka Aile Web, Arial, Noto Emoji, sans-serif;
   }
 
   h1 {
@@ -70,9 +83,9 @@
   --article-bg-color: var(--dark-article-bg-color);
   /* --font-color: var(--dark-font-color); */
 }
-main {
+/* main {
   grid-area: main;
-}
+} */
 /* header {
   grid-area: header;
 }
@@ -80,23 +93,40 @@ footer {
   grid-area: footer;
 } */
 
-/* Header */
-header {
-  padding: 0 4px;
-  margin-top: 5px;
+input {
+  width: 100%;
 }
+
+/* .emoji {
+ font-family: "Noto Emoji"; */
+/* font-size: medium; */
+/* width: 25px;
+  text-align: center; 
+} */
+
+.btn {
+  display: block;
+  margin-top: 4px;
+
+  padding: 0.1rem 0.75rem;
+  font-size: 0.9rem;
+  transition: background 0.1s linear;
+
+  background: var(--url-color); /* #0062cc; */
+  border: #001933 1px solid;
+  color: white;
+}
+
+/* Header */
 header ul {
   padding: 0;
-  margin: 8px 0;
+  font-size: large;
 }
-header li,
-article li {
+header li {
   list-style-type: none;
-  padding: 4px 0px;
+  padding: 4px 0;
 }
-header a,
-header a:hover,
-header a:visited {
+header a {
   color: var(--font-color);
   text-decoration: none;
 }
@@ -110,74 +140,79 @@ form.search {
   display: flex;
   column-gap: 4px;
 }
-#search {
-  width: 100%;
-}
 form.search p {
   font-size: small;
   margin: 4px auto;
 }
-form.search a:link,
-form.search a:visited {
+form.search a {
   text-decoration: none;
 }
 
 .favorite-tags {
-  padding-left: 8px;
-}
-
-.emoji {
-  font-family: "Noto Emoji";
-  font-size: medium;
+  padding-left: 40px;
 }
 
 /* Main */
-main > article {
-  margin: 5px 25px;
-  padding: 10px;
+article {
+  padding: 15px 25px;
   border-radius: 4px;
   background: var(--article-bg-color);
-  font-family: Iosevka Slab, sans-serif;
 }
-article a:link {
+article a {
   text-decoration: none;
+  text-align: center;
+  color: var(--second-font-color);
+}
+
+.imp {
+  background: #efe;
 }
 
 .bookmark {
   display: flex;
 }
-.bookmark > h3 > a {
-  color: var(--url-color);
-}
-h3 {
-  margin: 0px 10px 0px 0px;
-  font-size: medium;
+.bookmark > h4 {
+  margin: 2px 10px 10px 0;
+  /* font-size: medium; */
   text-align: justify;
 }
-
-/* .bookmark a:link,
-.bookmark a:visited {
+.bookmark > h4 > a {
   color: var(--url-color);
-} */
-
-.bookmark > a:first-of-type {
-  margin-left: auto;
 }
 
-/* .edit-bookmark-btn {
+.bookmark-buttons {
   margin-left: auto;
-  color: #a2d2ff; 77b9ff; 
+  display: flex;
+  column-gap: 4px;
+
+  visibility: hidden;
 }
-.delete-bookmark-btn {
-  color: #ffafcc;
-} */
+.bookmark:hover > .bookmark-buttons {
+  visibility: visible;
+}
+
+.bookmark-buttons > a:nth-child(1) {
+  color: orange;
+}
+.bookmark-buttons > a:nth-child(2) {
+  font-family: Noto Emoji;
+}
+.bookmark-buttons > a:nth-child(3) {
+  color: skyblue; /* #77b9ff a2d2ff; */
+}
+.bookmark-buttons > a:nth-child(4) {
+  color: pink; /* ffafcc */
+}
 
 .description {
-  margin: 8px 10px;
+  /* margin: 8px 10px; */
+  margin: 8px 0;
   text-align: justify;
 
-  border: 1px solid #999;
-  padding: 5px;
+  /* border: 1px solid lightgray;
+  padding: 5px; */
+  border-left: 2px solid #ccd;
+  padding-left: 1em;
 }
 
 .about-bookmark {
@@ -185,36 +220,49 @@ h3 {
   font-size: small;
   font-style: italic;
   margin-top: 5px;
-  color: var(--second-font-color);
 }
-.about-bookmark a {
+/* .about-bookmark a {
   color: var(--second-font-color);
+} */
+.about-bookmark a:hover {
+  color: black;
+  text-decoration-line: underline;
 }
-.about-bookmark time {
+time {
   margin-left: auto;
+  color: var(--second-font-color);
 }
 
+hr {
+  margin: 0 25px;
+  color: var(--hr-color);
+}
+
+/* Pages */
 .pages {
   display: flex;
-  gap: 4px;
-  justify-content: center;
-  margin: 10px auto;
+  justify-content: space-evenly;
+  margin: 10px 15em;
 }
-.pages a:link,
-.pages a:visited {
-  color: var(--font-color);
+.pages a {
+  /* color: var(--font-color); */
   text-decoration: none;
 }
 
 /* Right bar */
+.right-bar form {
+  margin: 4px auto;
+}
+
 .choose-date {
   margin-top: 8px;
+  width: auto;
 }
 
 /* Form */
-form textarea {
+textarea {
   width: 100%;
-  height: 200px;
+  height: 150px;
   resize: vertical;
 }
 
@@ -229,29 +277,41 @@ form textarea {
 }
 
 /* Tags page */
-article .tags-list {
+.tags-list {
   display: grid;
-  grid-template: "a a";
+  grid-template: "a a a";
   grid-auto-columns: max-content;
-  grid-column-gap: 15px;
+  grid-column-gap: 8px;
   grid-row-gap: 8px;
-  margin-left: 20px;
 }
-.tags-list a:link,
-.tags-list a:visited {
+.tags-list > h4 {
+  margin: 0;
+}
+.tags-list a {
   color: var(--url-color);
   text-decoration: none;
 }
 
-.btn {
-  display: block;
-  margin-top: 4px;
+.tag-edit-buttons > button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: skyblue;
 
-  padding: 0.1rem 0.75rem;
-  font-size: 0.9rem;
-  transition: background 0.1s linear;
+  visibility: hidden;
+  /* font-family: Noto Emoji; */
+}
 
-  background: var(--url-color); /* #0062cc; */
-  border: #001933 1px solid;
-  color: white;
+.tag-edit-buttons > a {
+  color: pink;
+
+  visibility: hidden;
+}
+
+.tag-edit-buttons:hover > button {
+  cursor: pointer;
+  visibility: visible;
+}
+.tag-edit-buttons:hover > a {
+  visibility: visible;
 }

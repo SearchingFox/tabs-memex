@@ -4,7 +4,7 @@
     <body>
         <header>
             <nav>
-                <h1><a href="/">Bookmarks <%= number %></a></h1>
+                <h1><a href="/">🦊 Bookmarks <%= number %></a></h1>
                 <% include!("nav.stpl"); %>
             </nav>
         </header>
@@ -12,10 +12,17 @@
             <% for bookmark in bookmarks { %>
                 <article>
                     <div class="bookmark">
-                        <h3><a href="<%- bookmark.url %>"><%- bookmark.name %></a></h3>
-
-                        <a class="edit-bookmark-btn emoji" href="/edit-bookmark/<%= bookmark.id %>">✏️</a>
-                        <a class="delete-bookmark-btn emoji" href="/delete-bookmark/<%= bookmark.id %>">🗑️</a>
+                        <h4 <%- if bookmark.tags.contains("imp") { "class=\"imp\"" } else { "" } %>><a href="<%- bookmark.url %>"><%- bookmark.name %></a></h4>
+                        <div class="bookmark-buttons">
+                            <a href="/set-tag/<%= bookmark.id %>/imp">&#x1F5A4;</a>
+                            <% if bookmark.tags.contains(&"todo".to_string()) { %>
+                                <a href="/set-tag/<%= bookmark.id %>/done" style="color: green">&#x2714;</a>
+                            <% } else { %>
+                                <a href="/set-tag/<%= bookmark.id %>/todo" style="color: red">&#x203C;</a>
+                            <% } %>
+                            <a href="/edit-bookmark/<%= bookmark.id %>" target="_blank">&#x270F;</a>
+                            <a href="/delete-bookmark/<%= bookmark.id %>">&#x1F5D1;</a>
+                        </div>
                     </div>
                     <% if !bookmark.description.is_empty() { %>
                         <div class="description"> <%- bookmark.description %> </div>
@@ -27,21 +34,23 @@
                             <% } %>
                         </div>
 
-                        <% use time::{OffsetDateTime, macros::format_description, UtcOffset}; %>
-                        <time><%= OffsetDateTime::from_unix_timestamp(bookmark.creation_time).unwrap().to_offset(UtcOffset::current_local_offset().unwrap()).format(format_description!("[year]-[month]-[day] [hour]:[minute]")).unwrap().to_string() %></time>
+                        <time><%= time::OffsetDateTime::from_unix_timestamp(bookmark.creation_time).unwrap()
+                                    .to_offset(time::UtcOffset::current_local_offset().unwrap())
+                                    .format(&time::format_description::well_known::Rfc3339).unwrap_or_default().to_string()[..16] %></time>
                     </div>
                 </article>
+                <hr>
             <% } %>
             <% if pages > 1 { %>
                 <div class="pages">
-                    <% for i in 0.max(pg-5)..pages.min(pg+6) { %>
-                        <a href="/all?p=<%= i %>"><%= i+1 %></a>
+                    <% for i in pg.checked_sub(5).unwrap_or(0)..pages.min(pg+6) { %>
+                        <a class="btn" href="/all?p=<%= i %>"><%= i+1 %></a>
                     <% } %>
                     <% if pages > 5 && pg < pages - 6 { %><span>...</span><% } %>
                     <form action="/all" id="page-selection">
                         <select name="p" form="page-selection" onchange="this.form.submit();">
                             <% for i in 0..pages { %>
-                                <option value="<%= i %>" <%= if pg == i { "selected" } else { "" } %> > <%= i+1 %> </option>
+                                <option value="<%= i %>" <%- if pg == i { "selected" } else { "" } %> > <%= i+1 %> </option>
                             <% } %>
                         </select>
                     </form>
@@ -51,14 +60,14 @@
         <div class="right-bar">
             <details>
                 <summary>Add bookmarks</summary>
-                <summary>Add bookmarks from file</summary>
+                <%# <summary>Add bookmarks from file</summary> %>
                 <form method="POST" enctype="multipart/form-data">
                     <input type="file" name="file" multiple />
                     <button class="btn">Save</button>
                 </form>
                 <hr>
                 <form method="POST" action="/add-urls">
-                    <textarea name="urls" placeholder="Insert bookmarks in format:&#10;name &#10;url"></textarea>
+                    <textarea name="urls" placeholder="Insert bookmarks in format:&#10;name &#10;url tag1 tag2..."></textarea>
                     <button class="btn">Save</button>
                 </form>
             </details>

@@ -1,4 +1,5 @@
 #![feature(iter_array_chunks)]
+#![allow(clippy::let_and_return)]
 
 use actix_web::{web, App, HttpServer};
 
@@ -13,11 +14,14 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             // .wrap(NormalizePath::trim())
-            .app_data(web::FormConfig::default().limit(128 * 1024))
+            .app_data(web::FormConfig::default().limit(512 * 1024))
             .service(handlers::index)
             .service(handlers::page)
             .service(handlers::tag_page)
             .service(handlers::tags_page)
+            .service(handlers::set_tag)
+            .service(handlers::rename_tag)
+            .service(handlers::delete_tag)
             .service(handlers::edit_page)
             .service(handlers::delete_bookmark)
             .service(handlers::search)

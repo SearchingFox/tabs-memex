@@ -19,7 +19,7 @@ pub fn init() -> Result<()> {
                 description    TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS tags (
-                tag_name       TEXT NOT NULL CHECK (tag_name <> ''),
+                tag_name       TEXT NOT NULL CHECK (tag_name <> '') ON CONFLICT IGNORE,
                 bookmark_id    INTEGER NOT NULL,
                 UNIQUE (tag_name, bookmark_id) ON CONFLICT IGNORE
             );
@@ -35,15 +35,22 @@ pub fn init() -> Result<()> {
             CREATE TRIGGER bookmarks_au AFTER UPDATE ON bookmarks BEGIN
                 INSERT INTO bookmarks_fts(bookmarks_fts, rowid, name, url, creation_time, description) VALUES('delete', old.id, old.name, old.url, old.creation_time, old.description);
                 INSERT INTO bookmarks_fts(rowid, name, url, creation_time, description) VALUES (new.id, new.name, new.url, new.creation_time, new.description);
+            END;
+
+            CREATE TRIGGER tags_done_ai AFTER INSERT ON tags WHEN new.tag_name = 'done' BEGIN
+                DELETE FROM tags WHERE tag_name = 'todo' AND bookmark_id = new.bookmark_id;
             END;")?;
     }
 
     Ok(())
 }
 
-pub fn insert(bookmarks: Vec<Bookmark>) -> Result<()> {
-    let mut conn = Connection::open(FILE_PATH)?;
-    let tx = conn.transaction()?;
+pub fn insert(bookmarks: Vec<Bookmark>) -> Vec<Bookmark> {
+    let mut conn = Connection::open(FILE_PATH).unwrap();
+    let tx = conn.transaction().unwrap();
+
+    let mut existing: Vec<Bookmark> = Vec::new();
+    let mut cnt = 0;
 
     for b in bookmarks {
         if let Err(err) = tx.execute(
@@ -53,11 +60,27 @@ pub fn insert(bookmarks: Vec<Bookmark>) -> Result<()> {
                 b.url,
             ],
         ) {
-            println!("{}: {}", err, b.url)
+            println!("{}: {} {} {:?}", err, b.name, b.url, b.tags);
+            existing.push(get_bookmark_by_url(b.url).unwrap()); // error
+        } else {
+            let bookmark_id = tx.last_insert_rowid();
+            for tag_name in b.tags {
+                tx.execute(
+                    "INSERT INTO tags (tag_name, bookmark_id) VALUES (?1, ?2)",
+                    params![
+                        tag_name.to_lowercase(),
+                        bookmark_id,
+                    ]).unwrap();
+            }
+
+            cnt += 1;
         }
     }
 
-    tx.commit()
+    println!("Inserted {}", cnt);
+    tx.commit().expect("Commint in insert function failed");
+
+    existing
 }
 
 pub fn update_bookmark(b: Bookmark) -> Result<()> {
@@ -75,12 +98,11 @@ pub fn update_bookmark(b: Bookmark) -> Result<()> {
 
     conn.execute("DELETE FROM tags WHERE bookmark_id = ?", params![b.id])?;
 
-    if !b.tags.is_empty() {
-        for tag in b.tags {
-            if !tag.is_empty() {
-                conn.execute("INSERT INTO tags VALUES (?1, ?2)", params![tag, b.id])?;
-            }
-        }
+    for tag in b.tags {
+        conn.execute(
+            "INSERT INTO tags VALUES (?1, ?2)",
+            params![tag.to_lowercase(), b.id],
+        )?;
     }
 
     Ok(())
@@ -95,13 +117,38 @@ pub fn delete_bookmark(id: u64) -> Result<()> {
     Ok(())
 }
 
+pub fn set_tag(id: i64, name: String) -> Result<()> {
+    let conn = Connection::open(FILE_PATH)?;
+
+    conn.execute("INSERT INTO tags VALUES (?1, ?2)", params![name, id])?;
+
+    Ok(())
+}
+
+pub fn delete_tag(name: String) -> Result<()> {
+    let conn = Connection::open(FILE_PATH)?;
+
+    conn.execute("DELETE FROM tags WHERE tag_name = ?", params![name])?;
+
+    Ok(())
+}
+
+pub fn rename_tag(old: String, new: &String) -> Result<()> {
+    let conn = Connection::open(FILE_PATH)?;
+
+    conn.execute(
+        "UPDATE tags SET tag_name = ?1 WHERE tag_name = ?2",
+        params![new, old],
+    )?;
+
+    Ok(())
+}
+
 pub fn tags_for_bookmark(id: u64) -> Result<BTreeSet<String>> {
     let conn = Connection::open(FILE_PATH)?;
 
-    let mut stmt = conn.prepare("SELECT DISTINCT tag_name FROM tags WHERE bookmark_id = :id")?;
-    let res = stmt
-        .query_map(named_params! {":id": id.to_string()}, |row| row.get(0))?
-        .collect();
+    let mut stmt = conn.prepare("SELECT DISTINCT tag_name FROM tags WHERE bookmark_id = ?")?;
+    let res = stmt.query_map(params![id], |row| row.get(0))?.collect();
 
     res
 }
@@ -123,15 +170,15 @@ pub fn list_tags() -> Result<Vec<Tag>> {
     res
 }
 
-pub fn list_all(page: i32) -> Result<Vec<Bookmark>> {
+pub fn list_all(page: usize) -> Result<Vec<Bookmark>> {
     let conn = Connection::open(FILE_PATH)?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, name, url, creation_time, description \
-        FROM bookmarks \
-        WHERE NOT EXISTS( \
-            SELECT 1 FROM tags WHERE tag_name = 'private' AND bookmark_id = id) \
-        ORDER BY creation_time DESC \
+        "SELECT id, name, url, creation_time, description
+        FROM bookmarks
+        WHERE NOT EXISTS(
+            SELECT 1 FROM tags WHERE tag_name = 'private' AND bookmark_id = id)
+        ORDER BY creation_time DESC
         LIMIT ?1 OFFSET ?2",
     )?;
     let res = stmt
@@ -169,13 +216,41 @@ pub fn get_bookmark_by_id(id: u64) -> Result<Bookmark> {
     )
 }
 
+pub fn get_bookmark_by_url(url: String) -> Result<Bookmark> {
+    let conn = Connection::open(FILE_PATH)?;
+
+    conn.query_row(
+        "SELECT id, name, url, creation_time, description FROM bookmarks WHERE url = ?",
+        params![url],
+        |row| {
+            Ok(Bookmark {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                url: row.get(2)?,
+                creation_time: row.get(3)?,
+                description: row.get(4)?,
+                tags: tags_for_bookmark(row.get(0)?)?,
+            })
+        },
+    )
+}
+
 pub fn get_bookmarks_by_tag(tag_name: String) -> Result<Vec<Bookmark>> {
     let conn = Connection::open(FILE_PATH)?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, name, url, creation_time, description
+        format!(
+            "SELECT id, name, url, creation_time, description
         FROM bookmarks JOIN tags ON id = bookmark_id WHERE tag_name = ?
+        {}
         ORDER BY creation_time DESC",
+            if tag_name != "private" {
+                "AND NOT EXISTS(SELECT 1 FROM tags WHERE tag_name = 'private' AND bookmark_id = id)"
+            } else {
+                ""
+            }
+        )
+        .as_str(),
     )?;
     let res = stmt
         .query_map(params![tag_name], |row| {
@@ -199,6 +274,7 @@ pub fn get_bookmarks_by_date(date: &String) -> Result<Vec<Bookmark>> {
     let mut stmt = conn.prepare(
         "SELECT id, name, url, creation_time, description
         FROM bookmarks WHERE date(creation_time, 'unixepoch', 'localtime') = ?
+        AND NOT EXISTS(SELECT 1 FROM tags WHERE tag_name = 'private' AND bookmark_id = id)
         ORDER BY creation_time DESC",
     )?;
     let res = stmt
@@ -220,7 +296,7 @@ pub fn get_bookmarks_by_date(date: &String) -> Result<Vec<Bookmark>> {
 pub fn search(query: &String) -> Result<Vec<Bookmark>> {
     let conn = Connection::open(FILE_PATH)?;
 
-    if query.starts_with("tags:") {
+    if query.starts_with("# ") {
         let mut stmt = conn.prepare(
             format!(
                 "SELECT id, name, url, creation_time, description FROM bookmarks WHERE id IN (
@@ -298,24 +374,35 @@ pub fn search(query: &String) -> Result<Vec<Bookmark>> {
     Ok(res)
 }
 
-pub fn count_all() -> Result<i32> {
+pub fn count_all() -> Result<usize> {
     let conn = Connection::open(FILE_PATH)?;
 
     conn.query_row_and_then("SELECT count() FROM bookmarks", [], |row| row.get(0))
 }
 
-pub fn insert_from_lines(input: String) -> Result<()> {
+pub fn insert_from_lines(input: String) -> Vec<Bookmark> {
     insert(
         input
             .lines()
             .array_chunks()
-            .map(|x: [&str; 2]| Bookmark {
-                id: 0,
-                name: x[0].to_string(),
-                url: x[1].to_string(),
-                creation_time: 0,
-                description: "".to_string(),
-                tags: BTreeSet::new(),
+            .map(|x: [&str; 2]| {
+                let (url, ts) = x[1].split_once(' ').unwrap_or((x[1], ""));
+                let name = if x[0].is_empty() {
+                    url.to_string()
+                } else {
+                    x[0].to_string()
+                };
+                Bookmark {
+                    id: 0,
+                    name,
+                    url: url.to_string(),
+                    creation_time: 0,
+                    description: "".to_string(),
+                    tags: ts
+                        .split(' ')
+                        .filter_map(|x| (!x.is_empty()).then(|| x.to_string()))
+                        .collect::<BTreeSet<String>>(),
+                }
             })
             .collect(),
     )

@@ -15,11 +15,20 @@ use std::collections::HashMap;
 use crate::database;
 use crate::types::{Bookmark, Index, Tags};
 
+fn get_referer(req: HttpRequest) -> Result<String> {
+    req.headers()
+        .get(REFERER)
+        .map_or(Ok("/all"), |x| x.to_str())
+        .map(String::from)
+        .map_err(ErrorInternalServerError)
+}
+
 #[post("/all")]
 async fn add_file_form(
     req: HttpRequest,
     mut payload: actix_multipart::Multipart,
 ) -> Result<impl Responder> {
+    let mut rs: Vec<Bookmark> = Vec::new();
     while let Some(item) = payload.next().await {
         let mut field = item?;
         let mut res = "".to_string();
@@ -28,39 +37,58 @@ async fn add_file_form(
             res.push_str(std::str::from_utf8(&chunk?)?);
         }
 
-        database::insert_from_lines(res).map_err(ErrorInternalServerError)?;
+        rs.append(&mut database::insert_from_lines(res));
+        // .map_err(ErrorInternalServerError)?
     }
 
-    Ok(Redirect::to(
-        req.headers()
-            .get(REFERER)
-            .map_or(Ok("/all"), |x| x.to_str())
-            .map(String::from)
-            .map_err(ErrorInternalServerError)?,
-    )
-    .see_other())
+    if rs.is_empty() {
+        Ok(HttpResponse::SeeOther()
+            .append_header(("Location", get_referer(req)?))
+            .finish())
+    } else {
+        Ok(HttpResponse::Ok()
+            .content_type("text/html; charset=utf-8")
+            .body(
+                Index {
+                    bookmarks: rs.clone(),
+                    number: rs.len(),
+                    pg: 0,
+                    pages: 0,
+                }
+                .render_once()
+                .map_err(ErrorInternalServerError)?,
+            ))
+    }
 }
 
 #[post("/add-urls")]
 async fn add_urls_form(
     req: HttpRequest,
     Form(form): Form<HashMap<String, String>>,
-) -> Result<impl Responder> {
-    database::insert_from_lines(form.get("urls").cloned().unwrap())
-        .map_err(ErrorInternalServerError)?;
-
-    Ok(Redirect::to(
-        req.headers()
-            .get(REFERER)
-            .map_or(Ok("/all"), |x| x.to_str())
-            .map(String::from)
-            .map_err(ErrorInternalServerError)?,
-    )
-    .see_other())
+) -> Result<HttpResponse> {
+    let res = database::insert_from_lines(form.get("urls").cloned().unwrap());
+    if res.is_empty() {
+        Ok(HttpResponse::SeeOther()
+            .append_header(("Location", get_referer(req)?))
+            .finish())
+    } else {
+        Ok(HttpResponse::Ok()
+            .content_type("text/html; charset=utf-8")
+            .body(
+                Index {
+                    bookmarks: res.clone(),
+                    number: res.len(),
+                    pg: 0,
+                    pages: 0,
+                }
+                .render_once()
+                .map_err(ErrorInternalServerError)?,
+            ))
+    }
 }
 
 #[post("/edit-bookmark/{id:\\d+}")]
-async fn update_bookmark_form(id: Path<u64>, form: Form<Bookmark>) -> Result<impl Responder> {
+async fn update_bookmark_form(id: Path<i64>, form: Form<Bookmark>) -> Result<impl Responder> {
     database::update_bookmark(Bookmark {
         id: id.into_inner(),
         name: form.name.clone(),
@@ -76,11 +104,6 @@ async fn update_bookmark_form(id: Path<u64>, form: Form<Bookmark>) -> Result<imp
 
 #[get("/edit-bookmark/{id:\\d+}")]
 async fn edit_page(req: HttpRequest, id: Path<u64>) -> Result<HttpResponse> {
-    // req.headers()
-    //         .get(REFERER)
-    //         .map_or(Ok("/all"), |x| x.to_str())
-    //         .map(String::from)
-    //         .map_err(ErrorInternalServerError)?,
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(
@@ -95,15 +118,17 @@ async fn edit_page(req: HttpRequest, id: Path<u64>) -> Result<HttpResponse> {
 async fn delete_bookmark(req: HttpRequest, id: Path<u64>) -> Result<impl Responder> {
     database::delete_bookmark(id.into_inner()).map_err(ErrorInternalServerError)?;
 
-    Ok(Redirect::to(
-        req.headers()
-            .get(REFERER)
-            .map_or(Ok("/all"), |x| x.to_str())
-            .map(String::from)
-            .map_err(ErrorInternalServerError)?,
-    )
-    .see_other())
+    Ok(Redirect::to(get_referer(req)?).see_other())
 }
+
+#[get("/set-tag/{id}/{tag}")]
+async fn set_tag(req: HttpRequest, path: Path<(i64, String)>) -> Result<impl Responder> {
+    let (id, tag) = path.into_inner();
+    database::set_tag(id, tag).map_err(ErrorInternalServerError)?;
+
+    Ok(Redirect::to(get_referer(req)?).see_other())
+}
+
 #[get("/tags")]
 async fn tags_page() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok()
@@ -121,7 +146,7 @@ async fn tags_page() -> Result<HttpResponse> {
 async fn tag_page(name: Path<String>) -> Result<HttpResponse> {
     let found =
         database::get_bookmarks_by_tag(name.into_inner()).map_err(ErrorInternalServerError)?;
-    let len = found.len() as i32;
+    let len = found.len();
 
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
@@ -137,11 +162,30 @@ async fn tag_page(name: Path<String>) -> Result<HttpResponse> {
         ))
 }
 
+#[post("/rename-tag/{old}")]
+async fn rename_tag(
+    req: HttpRequest,
+    old: Path<String>,
+    form: Form<HashMap<String, String>>,
+) -> Result<impl Responder> {
+    database::rename_tag(old.into_inner(), form.get("new").unwrap())
+        .map_err(ErrorInternalServerError)?;
+
+    Ok(Redirect::to(get_referer(req)?).see_other())
+}
+
+#[get("/delete-tag/{name}")]
+async fn delete_tag(req: HttpRequest, name: Path<String>) -> Result<impl Responder> {
+    database::delete_tag(name.into_inner()).map_err(ErrorInternalServerError)?;
+
+    Ok(Redirect::to(get_referer(req)?).see_other())
+}
+
 #[get("/")]
 async fn index() -> Result<HttpResponse> {
     let found =
         database::get_bookmarks_by_tag("imp".to_string()).map_err(ErrorInternalServerError)?;
-    let len = found.len() as i32;
+    let len = found.len();
 
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
@@ -158,7 +202,7 @@ async fn index() -> Result<HttpResponse> {
 }
 
 #[get("/all")]
-async fn page(page: Query<HashMap<String, i32>>) -> Result<HttpResponse> {
+async fn page(page: Query<HashMap<String, usize>>) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(
@@ -167,7 +211,7 @@ async fn page(page: Query<HashMap<String, i32>>) -> Result<HttpResponse> {
                     .map_err(ErrorInternalServerError)?,
                 number: database::count_all().unwrap_or(0),
                 pg: page.get("p").cloned().unwrap_or_default(),
-                pages: database::count_all().map_err(ErrorInternalServerError)? / 100 + 1,
+                pages: database::count_all().unwrap_or(0) / 100 + 1,
             }
             .render_once()
             .map_err(ErrorInternalServerError)?,
@@ -183,7 +227,7 @@ async fn search(q: Query<HashMap<String, String>>) -> Result<HttpResponse> {
         Some((k, v)) if k == "q" => database::search(v).map_err(ErrorInternalServerError)?,
         _ => Vec::new(),
     };
-    let len = found.len() as i32;
+    let len = found.len();
 
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
