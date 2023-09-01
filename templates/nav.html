@@ -1,0 +1,20 @@
+<form class="search" action="/search">
+    <input type="search" id="search" name="q" placeholder="Search..." title="Search tags: # tag1 tag2 ..." />
+    <p>
+        <a class="emoji" href="https://www.sqlite.org/fts5.html#full_text_query_syntax">&#x2753;</a>
+    </p>
+</form>
+<form action="/search">
+    <input type="date" class="choose-date" name="d" onchange="this.form.submit()">
+</form>
+<ul>
+    <li> <a href="/all">&#x1F5C3; All</a> </li>
+    <li> <a href="/tags">&#x1F3F7; Tags</a>
+    <li> <a href="/export-csv">Export CSV</a> </li>
+</ul>
+<hr>
+<ul class="favorite-tags">
+    {% for fav in favorites %}
+        <li> <a href="{{ fav }}">{{ fav }}</a> </li>
+    {% endfor %}
+</ul>

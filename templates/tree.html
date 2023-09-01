@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    {% include 'head.html' %}
+    <body>
+        <script>
+            function toggleTheme() {
+                var theme = window.localStorage.getItem("theme");
+                if (theme === "dark") {
+                    window.localStorage.setItem("theme", "light");
+                } else {
+                    window.localStorage.setItem("theme", "dark");
+                }
+                document.body.classList.toggle("dark");
+            }
+
+            document.body.classList.add(window.localStorage.getItem("theme"));
+        </script>
+        <header>
+            <nav>
+                <h2><a href="/">🔎🦊 Tree</a></h2>
+                {% include 'nav.html' %}
+            </nav>
+        </header>
+        <main>
+            {% for (k, v) in tree|items|sort(attribute="1") %}
+                {% if v|length > 0 %}
+                <details>
+                    <summary>{{ k }} | {{ v|length }}</summary>
+                    <ul>
+                        {% for vv in v %}
+                        <li> {{ vv }} </li>
+                        {% endfor %}
+                    </ul>
+                </details>
+                {% endif %}
+            {% endfor %}
+        </main>
+    </body>
+</html>

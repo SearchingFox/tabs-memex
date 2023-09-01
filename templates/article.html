@@ -1,0 +1,33 @@
+<article id="a{{ bookmark.id }}" hx-swap-oob="true">
+    <div class="bookmark">
+        <input type="checkbox" name="ids" value="{{ bookmark.id }}">
+        <h4 {{ 'style="text-decoration: line-through"' | safe if deleted }}>
+            <a href="{{ bookmark.url }}">{{ bookmark.name | safe }}</a>
+        </h4>
+        <div class="bookmark-buttons">
+            <button class="hx-button" hx-put="/set-tag/{{ bookmark.id }}/imp">&#x1F5A4;</button>
+            {% if bookmark.tags | select("==", "todo") %}
+                <button class="hx-button" hx-put="/set-tag/{{ bookmark.id }}/done" style="color: green">&#x2714;</button>
+            {% else %}
+                <button class="hx-button" hx-put="/set-tag/{{ bookmark.id }}/todo" style="color: red">&#x203C;</button>
+            {% endif %}
+            <button class="hx-button" hx-put="/set-tag/{{ bookmark.id }}/private">&#x1F608;</button>
+            <button class="hx-button" hx-get="/edit-bookmark/{{ bookmark.id }}">&#x270F;</button>
+        </div>
+    </div>
+    {% if bookmark.description %}
+        <div class="description">
+            {{ bookmark.description }}
+        </div>
+    {% endif %}
+    <div class="about-bookmark">
+        <div>
+            {% for tag in bookmark.tags %}
+                <a href="/tags/{{ tag }}">#{{ tag }}</a>
+            {% endfor %}
+        </div>
+        <time>
+            {{ bookmark.creation_time | datetimeformat(format="short") }}
+        </time>
+    </div>
+</article>

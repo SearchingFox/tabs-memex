@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+    {% include 'head.html' %}
+    <body>
+        <script>
+            function toggleTheme() {
+                var theme = window.localStorage.getItem("theme");
+                if (theme === "dark") {
+                    window.localStorage.setItem("theme", "light");
+                } else {
+                    window.localStorage.setItem("theme", "dark");
+                }
+                document.body.classList.toggle("dark");
+            }
+
+            document.body.classList.add(window.localStorage.getItem("theme"));
+        </script>
+        <header>
+            <nav>
+                <h2><a href="/">🔎🦊 Bookmarks {{ number if number else bookmarks | length }}</a></h2>
+                {% include 'nav.html' %}
+            </nav>
+        </header>
+        <main>
+            <div id="group-buttons" hx-include="#checked-articles">
+                <button class="hx-button" style="color: pink;" hx-delete="/delete-bookmark" hx-swap="none" hx-confirm="Are you sure?">&#x1F5D1;</button>
+            </div>
+            <form id="checked-articles" autocomplete="off">
+                {% for bookmark in bookmarks %}
+                    {% include 'article.html' %}
+                    <hr>
+                {% endfor %}
+            </form>
+        </main>
+        <div class="right-bar">
+            <form method="POST" action="/add-bookmarks">
+                <textarea name="urls" placeholder="Insert bookmarks in the format:&#10;name &#10;url tag1 tag2 ..."></textarea>
+                <input name="all_tags" placeholder="Tags for all inserted bookmarks">
+                <button class="btn">Add</button>
+            </form>
+            <button class="btn" onclick="toggleTheme()">Toggle Theme</button>
+            {% if pages > 1 %}
+                <div class="pages">
+                    <form action="/all" id="page-selection">
+                        <select name="p" form="page-selection" onchange="this.form.submit()">
+                            {% for i in range(pages) %}
+                                <option value="{{ i }}" {{ "selected" if page == i }}> {{ i+1 }} </option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" name="limit" value="200">
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </body>
+</html>
