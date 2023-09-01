@@ -1,10 +1,12 @@
-use sailfish::TemplateOnce;
+use axum::{
+    http::StatusCode,
+    response::{Html, IntoResponse, Response},
+};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use std::collections::BTreeSet;
 
-#[derive(Clone, Debug, Serialize, Deserialize, TemplateOnce)]
-#[template(path = "edit.stpl")]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Bookmark {
     #[serde(skip_deserializing)]
     pub id: i64,
@@ -15,39 +17,43 @@ pub struct Bookmark {
     pub description: String,
     #[serde(deserialize_with = "tags_deserialize")]
     pub tags: BTreeSet<String>,
-    // ? pub update_time: u64,
 }
 
 fn tags_deserialize<'de, D>(deserializer: D) -> Result<BTreeSet<String>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let str_sequence = String::deserialize(deserializer)?;
-    Ok(str_sequence
+    Ok(String::deserialize(deserializer)?
         .split(' ')
-        .filter_map(|item| (!item.is_empty()).then_some(item.to_string()))
+        .map(String::from)
         .collect())
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Tag {
     pub tag_name: String,
     pub bookmarks_count: u64,
-    // ? pub is_favorite: bool,
-    // ? pub color: String
 }
 
-#[derive(TemplateOnce)]
-#[template(path = "tags.stpl")]
-pub struct Tags {
-    pub tags: Vec<Tag>,
+pub struct Page {
+    pub offset: usize,
+    pub limit: usize,
 }
 
-#[derive(TemplateOnce)]
-#[template(path = "index.stpl")]
-pub struct Index {
-    pub bookmarks: Vec<Bookmark>,
-    pub number: usize,
-    pub pg: usize,
-    pub pages: usize,
+pub struct MyError(pub String);
+
+// E: Error doesn't work...
+impl<D: std::fmt::Display> From<D> for MyError {
+    fn from(err: D) -> Self {
+        MyError(format!("Error: {}", err))
+    }
+}
+
+impl IntoResponse for MyError {
+    fn into_response(self) -> Response {
+        let MyError(body) = self;
+
+        // https://github.com/bigskysoftware/htmx/issues/1619
+        (StatusCode::OK, Html(body)).into_response()
+    }
 }
