@@ -2,6 +2,12 @@
 <html>
     {% include 'head.html' %}
     <body>
+        <header>
+            <nav>
+                <h2><a href="/">🔎🦊 Bookmarks {{ number if number else bookmarks | length }}</a></h2>
+                {% include 'nav.html' %}
+            </nav>
+        </header>
         <script>
             function toggleTheme() {
                 var theme = window.localStorage.getItem("theme");
@@ -15,12 +21,6 @@
 
             document.body.classList.add(window.localStorage.getItem("theme"));
         </script>
-        <header>
-            <nav>
-                <h2><a href="/">🔎🦊 Bookmarks {{ number if number else bookmarks | length }}</a></h2>
-                {% include 'nav.html' %}
-            </nav>
-        </header>
         <main>
             <div id="group-buttons" hx-include="#checked-articles">
                 <button class="hx-button" style="color: pink;" hx-delete="/delete-bookmark" hx-swap="none" hx-confirm="Are you sure?">&#x1F5D1;</button>
