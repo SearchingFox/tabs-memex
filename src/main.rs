@@ -7,12 +7,13 @@ mod types;
 
 use axum::routing::{delete, get, post, put};
 use minijinja::{path_loader, value::Value, Environment};
-use minijinja_contrib::filters::datetimeformat;
-use types::MyError;
+use time::{format_description::well_known::Rfc3339, OffsetDateTime, UtcOffset};
+use tokio::net::TcpListener;
 
 use std::sync::{Arc, Mutex};
 
 use handlers::*;
+use types::MyError;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -24,6 +25,15 @@ impl AppState {
     pub fn render(&self, name: &str, ctx: Value) -> Result<String, MyError> {
         Ok(self.env.get_template(name)?.render(ctx)?)
     }
+}
+
+fn datetimeformat(value: String) -> String {
+    OffsetDateTime::from_unix_timestamp(value.parse().unwrap_or_default())
+        .unwrap_or(OffsetDateTime::UNIX_EPOCH)
+        .to_offset(UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC))
+        .format(&Rfc3339)
+        .map(|x| x[..16].to_string())
+        .unwrap_or_default()
 }
 
 #[tokio::main]
@@ -38,7 +48,7 @@ async fn main() {
         ))),
         env,
     };
-    println!("Server is starting at http://localhost:3000");
+    println!("Server is running at http://localhost:3000");
 
     let app = axum::Router::new()
         .route("/", get(index))
@@ -58,8 +68,8 @@ async fn main() {
         .route("/all-tags", get(all_tags))
         .with_state(state);
 
-    axum::Server::bind(&std::net::SocketAddr::from(([127, 0, 0, 1], 3000)))
-        .serve(app.into_make_service())
+    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, app)
         .await
         .expect("Can't start server!");
 }
