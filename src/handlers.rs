@@ -1,23 +1,23 @@
 use axum::{
+    Form, Json,
     extract::{Path, Query, RawQuery, State},
     http::header::{CONTENT_DISPOSITION, CONTENT_TYPE},
     response::{Html, IntoResponse, Redirect},
-    Form, Json,
 };
 use minijinja::context;
 
 use std::{collections::HashMap, num::ParseIntError};
 
 use crate::{
-    types::{Bookmark, MyError, Page},
     AppState,
+    types::{Bookmark, MyError, Page},
 };
 
 pub async fn add_bookmarks_form(
     State(state): State<AppState>,
     Form(form): Form<HashMap<String, String>>,
 ) -> Result<Html<String>, MyError> {
-    Ok(Html(state.env.get_template("index.html")?.render(
+    Ok(Html(state.render("index.html",
         context! { bookmarks => state.db.lock()?.insert(
             form.get("urls").ok_or(MyError("no 'urls' field in add_bookmarks_form".to_string()))?,
             form.get("all_tags").ok_or(MyError("no 'all_tags' field in add_bookmarks_form".to_string()))?,
@@ -30,7 +30,8 @@ pub async fn update_bookmark_form(
     Path(id): Path<i64>,
     Form(form): Form<Bookmark>,
 ) -> Result<Html<String>, MyError> {
-    Ok(Html(state.env.get_template("article.html")?.render(
+    Ok(Html(state.render(
+        "article.html",
         context! { bookmark => state.db.lock()?.update_bookmark(&Bookmark {
             id,
             url: form.url,
@@ -42,11 +43,12 @@ pub async fn update_bookmark_form(
     )?))
 }
 
-pub async fn edit_page(
+pub async fn edit_bookmark(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<Html<String>, MyError> {
-    Ok(Html(state.env.get_template("edit.html")?.render(
+    Ok(Html(state.render(
+        "edit.html",
         context! { bookmark => state.db.lock()?.get_bookmark_by_id(id)? },
     )?))
 }
@@ -60,10 +62,11 @@ pub async fn delete_bookmark(
         .split('&')
         .map(|x| x.split_once('=').unwrap_or_default().1.parse())
         .collect();
-    let res = state.db.lock()?.delete_bookmark(&parsed_ids?)?;
+    let deleted = state.db.lock()?.delete_bookmark(&parsed_ids?)?;
 
     Ok(Html(
-        res.iter()
+        deleted
+            .iter()
             .map(|bookmark| {
                 state
                     .render("article.html", context! { bookmark, deleted => true })
@@ -77,27 +80,30 @@ pub async fn set_tag(
     State(state): State<AppState>,
     Path((id, tag)): Path<(i64, String)>,
 ) -> Result<Html<String>, MyError> {
-    let bookmark = state.db.lock()?.set_tag(&tag, id)?;
-    Ok(Html(state.render("article.html", context! { bookmark })?))
+    Ok(Html(state.render(
+        "article.html",
+        context! { bookmark => state.db.lock()?.set_tag(&tag, id)? },
+    )?))
 }
 
 pub async fn tags_page(State(state): State<AppState>) -> Result<Html<String>, MyError> {
-    let tags = state.db.lock()?.list_tags()?;
-    let favorites = state.db.lock()?.get_favorites()?;
-    Ok(Html(
-        state.render("tags.html", context! { tags, favorites })?,
-    ))
+    Ok(Html(state.render("tags.html", context! {
+        tags => state.db.lock()?.list_tags()?,
+        favorites => state.db.lock()?.get_favorites()?
+    })?))
 }
 
 pub async fn tag_page(
     State(state): State<AppState>,
-    Path(name): Path<String>,
+    Path(tag_name): Path<String>,
 ) -> Result<Html<String>, MyError> {
-    let bookmarks = state.db.lock()?.get_bookmarks_by_tag(&name)?;
+    let bookmarks = state.db.lock()?.get_bookmarks_by_tag(&tag_name)?;
     let favorites = state.db.lock()?.get_favorites()?;
-    Ok(Html(
-        state.render("index.html", context! { bookmarks, favorites })?,
-    ))
+
+    Ok(Html(state.render(
+        "index.html",
+        context! { bookmarks, favorites, tag_name },
+    )?))
 }
 
 pub async fn rename_tag(
@@ -130,13 +136,10 @@ pub async fn set_favorite(
 }
 
 pub async fn index(State(state): State<AppState>) -> Result<Html<String>, MyError> {
-    Ok(Html(state.render(
-        "index.html",
-        context! {
-            bookmarks => state.db.lock()?.get_bookmarks_by_tag("imp")?,
-            favorites => state.db.lock()?.get_favorites()?
-        },
-    )?))
+    Ok(Html(state.render("index.html", context! {
+        bookmarks => state.db.lock()?.get_bookmarks_by_tag("imp")?,
+        favorites => state.db.lock()?.get_favorites()?
+    })?))
 }
 
 pub async fn page(
@@ -145,18 +148,14 @@ pub async fn page(
 ) -> Result<Html<String>, MyError> {
     let db = state.db.lock()?;
     let number = db.count_all().unwrap_or_default();
-    let favorites = db.get_favorites()?;
 
-    Ok(Html(state.render(
-        "index.html",
-        context! {
-            bookmarks => db.get_page(&page)?,
-            number,
-            page => page.p.unwrap_or_default(),
-            pages => number.div_ceil(page.limit.unwrap_or(200)),
-            favorites
-        },
-    )?))
+    Ok(Html(state.render("index.html", context! {
+        bookmarks => db.get_page(&page)?,
+        number,
+        page => page.p.unwrap_or_default(),
+        pages => number.div_ceil(page.limit.unwrap_or(200)),
+        favorites => db.get_favorites()?
+    })?))
 }
 
 pub async fn search(
@@ -192,8 +191,8 @@ pub async fn all_tags(State(app_state): State<AppState>) -> Result<Json<Vec<Stri
             .db
             .lock()?
             .list_tags()?
-            .iter()
-            .map(|tag| tag.tag_name.clone())
+            .into_iter()
+            .map(|tag| tag.tag_name)
             .collect(),
     ))
 }

@@ -1,14 +1,12 @@
 #![feature(iter_array_chunks)]
-#![allow(clippy::let_and_return)]
 
 mod database;
 mod handlers;
 mod types;
 
 use axum::routing::{delete, get, post, put};
-use minijinja::{path_loader, value::Value, Environment};
-use time::{format_description::well_known::Rfc3339, OffsetDateTime, UtcOffset};
-use tokio::net::TcpListener;
+use minijinja::{Environment, path_loader, value::Value};
+use time::{OffsetDateTime, UtcOffset, format_description::well_known::Rfc3339};
 
 use std::sync::{Arc, Mutex};
 
@@ -18,7 +16,7 @@ use types::MyError;
 #[derive(Clone)]
 pub struct AppState {
     pub db: Arc<Mutex<database::Db>>,
-    pub env: minijinja::Environment<'static>,
+    pub env: Environment<'static>,
 }
 
 impl AppState {
@@ -54,21 +52,23 @@ async fn main() {
         .route("/", get(index))
         .route("/all", get(page))
         .route("/tags", get(tags_page))
-        .route("/tags/:name", get(tag_page))
+        .route("/tags/{name}", get(tag_page))
         .route("/search", get(search))
         .route("/add-bookmarks", post(add_bookmarks_form))
-        .route("/edit-bookmark/:id", post(update_bookmark_form))
-        .route("/edit-bookmark/:id", get(edit_page))
+        .route(
+            "/edit-bookmark/{id}",
+            get(edit_bookmark).post(update_bookmark_form),
+        )
         .route("/delete-bookmark", delete(delete_bookmark))
-        .route("/set-tag/:id/:tag", put(set_tag))
-        .route("/rename-tag/:old", post(rename_tag))
-        .route("/delete-tag/:name", delete(delete_tag))
-        .route("/set-favorite/:name", put(set_favorite))
+        .route("/set-tag/{id}/{tag}", put(set_tag))
+        .route("/rename-tag/{old}", post(rename_tag))
+        .route("/delete-tag/{name}", delete(delete_tag))
+        .route("/set-favorite/{name}", put(set_favorite))
         .route("/export-csv", get(export_csv))
         .route("/all-tags", get(all_tags))
         .with_state(state);
 
-    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app)
         .await
         .expect("Can't start server!");

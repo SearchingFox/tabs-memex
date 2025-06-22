@@ -1,6 +1,5 @@
 use rusqlite::{
-    config::DbConfig::SQLITE_DBCONFIG_ENABLE_FKEY, named_params, params, Connection, OpenFlags,
-    Result,
+    Connection, OpenFlags, Result, config::DbConfig::SQLITE_DBCONFIG_ENABLE_FKEY, params,
 };
 
 use std::collections::BTreeSet;
@@ -22,7 +21,7 @@ impl Db {
                 let conn = Connection::open(file_path)
                     .expect("Error while opening connection to new database");
                 conn.set_db_config(SQLITE_DBCONFIG_ENABLE_FKEY, true)
-                    .unwrap();
+                    .expect("Error while setting SQLITE_DBCONFIG_ENABLE_FKEY");
                 conn.execute_batch(
                     &std::fs::read_to_string("init.sql").expect("Couldn't read init.sql"),
                 )
@@ -35,23 +34,21 @@ impl Db {
 
     pub fn update_bookmark(&self, new: &Bookmark) -> Result<Bookmark> {
         self.conn.execute(
-            "UPDATE bookmarks SET name = :new_name, url = :new_url, description = :new_description WHERE id = :id",
-            named_params! {
-                ":new_name": new.name,
-                ":new_url": new.url,
-                ":new_description": new.description,
-                ":id": new.id,
-            },
+            "UPDATE bookmarks
+             SET name = ?1, url = ?2, description = ?3
+             WHERE id = ?4",
+            params![new.name, new.url, new.description, new.id],
         )?;
 
         self.conn
             .execute("DELETE FROM tags WHERE bookmark_id = ?", params![new.id])?;
 
         for tag in &new.tags {
-            self.conn.execute(
-                "INSERT OR IGNORE INTO tags VALUES (?1, ?2)",
-                params![tag.to_lowercase(), new.id],
-            )?;
+            self.conn
+                .execute("INSERT OR IGNORE INTO tags VALUES (?1, ?2)", params![
+                    tag.to_lowercase(),
+                    new.id
+                ])?;
         }
 
         self.get_bookmark_by_id(new.id)
@@ -128,6 +125,7 @@ impl Db {
             .collect()
     }
 
+    #[allow(clippy::let_and_return)]
     pub fn get_page(&self, page: &Page) -> Result<Vec<Bookmark>> {
         let offset = page.p.unwrap_or(0);
         let limit = page.limit.unwrap_or(200);
@@ -141,9 +139,8 @@ impl Db {
             ON id = bookmark_id
             WHERE id NOT IN
                 (SELECT DISTINCT bookmark_id FROM tags WHERE tag_name = 'private')
-            ORDER BY {}
-            LIMIT ?1 OFFSET ?2",
-            sort
+            ORDER BY {sort}
+            LIMIT ?1 OFFSET ?2"
         ))?;
         let res = stmt
             .query_map(params![limit, limit * offset], |row| {
@@ -205,6 +202,7 @@ impl Db {
         )
     }
 
+    #[allow(clippy::let_and_return)]
     pub fn get_bookmarks_by_tag(&self, tag_name: &str) -> Result<Vec<Bookmark>> {
         let mut stmt = self.conn.prepare(
             "SELECT * FROM bookmarks
@@ -233,6 +231,7 @@ impl Db {
         res
     }
 
+    #[allow(clippy::let_and_return)]
     pub fn get_bookmarks_by_date(&self, date: &str) -> Result<Vec<Bookmark>> {
         let mut stmt = self.conn.prepare(
             "SELECT * FROM bookmarks LEFT JOIN
@@ -446,14 +445,6 @@ impl Db {
             .chain(not_existing.into_iter().map(|x| self.get_bookmark_by_id(x)))
             .collect()
     }
-
-    // pub fn export_obsidian(&self) {
-    //     let mut stmt = self.conn.prepare(
-    //         "SELECT * FROM bookmarks LEFT JOIN
-    //             (SELECT group_concat(tag_name) as tags, bookmark_id FROM tags GROUP BY bookmark_id)
-    //         ON id = bookmark_id",
-    //     )?;
-    // }
 
     pub fn export_csv(&self) -> Result<String> {
         let mut stmt = self.conn.prepare(

@@ -46,7 +46,7 @@ pub struct MyError(pub String);
 
 impl<E: std::error::Error> From<E> for MyError {
     fn from(err: E) -> Self {
-        MyError(format!("Error: {}", err))
+        MyError(format!("Error: {err}"))
     }
 }
 

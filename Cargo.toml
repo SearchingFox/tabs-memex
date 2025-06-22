@@ -1,12 +1,12 @@
 [package]
 name = "tabs-memex"
-version = "1.5.0"
-edition = "2021"
+version = "1.6.0"
+edition = "2024"
 
 [dependencies]
-axum = { version = "0.7", features = ["query", "form"] }
-minijinja = { version = "2.0", features = ["loader"] }
-rusqlite = { version = "0.31", features = ["bundled"] }
+axum = { version = "0.8", features = ["query", "form"] }
+minijinja = { version = "2.8", features = ["loader"] }
+rusqlite = { version = "0.36", features = ["bundled"] }
 serde = { version = "1.0", features = ["derive"] }
 time = { version = "0.3", features = ["formatting", "local-offset"] }
-tokio = { version = "1.35", features = ["full"] }
+tokio = { version = "1.44", features = ["full"] }
